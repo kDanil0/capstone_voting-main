@@ -113,7 +113,7 @@ const AppContent = () => {
                 <Route path="elections" element={<AdminElection />} />
                 <Route path="elections/view" element={<ViewAllElections />} />
                 <Route path="elections/create" element={<CreateElections />} />
-                <Route path="elections/results" element={<ElectionsReport />} />
+                {/* <Route path="elections/results" element={<ElectionsReport />} /> */}
                 <Route path="candidates" element={<CandidateManagement />} />
                 <Route path="students" element={<StudentManagement />} />
               </Routes>
