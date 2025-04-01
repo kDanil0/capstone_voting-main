@@ -339,16 +339,53 @@ export const getAllPositions = async () => {
 
 export const getAllPartylists = async (token) => {
     try {
+        console.log('Fetching partylists with token:', token);
         const response = await axiosInstance.get(`/api/partylists/all`, {
             headers: {
                 Authorization: `Bearer ${token}`,
             }
         });
-        console.log('reached function')
+        
+        console.log('Partylists response data:', response.data);
+        
+        // If the response has a specific structure, return it properly
+        if (response.data && (response.data.party_lists || response.data.partylists)) {
+            return response.data;
+        }
+        
+        // If the response is an array directly, format it properly
+        if (Array.isArray(response.data)) {
+            console.log('Response data is an array, converting to expected format');
+            return { party_lists: response.data };
+        }
+        
+        // Default return
         return response.data;
     } catch (error) {
-        console.error("Error fetching candidates details", error);
-        throw error
+        console.error("Error fetching partylists:", error);
+        
+        // Check if the error has a response from the server
+        if (error.response) {
+            console.error("Server response error:", error.response.data);
+            console.error("Status code:", error.response.status);
+            return { 
+                success: false, 
+                message: error.response.data.message || 'Failed to fetch partylists' 
+            };
+        } else if (error.request) {
+            // The request was made but no response was received
+            console.error("No response received:", error.request);
+            return { 
+                success: false, 
+                message: 'No response received from server'
+            };
+        } else {
+            // Something else caused the error
+            return { 
+                success: false, 
+                message: error.message || 'Error fetching partylists' 
+            };
+        }
     }
 }
 
@@ -1024,4 +1061,375 @@ export const createElection = async (token, electionData) => {
     };
   }
 };
+
+// Update candidate details
+export const updateCandidate = async (token, candidateData) => {
+  try {
+    // Prepare the payload according to backend API requirements
+    const payload = {
+      student_id: candidateData.student_id,
+      position_id: candidateData.position_id,
+      election_id: candidateData.election_id,
+      party_list_id: candidateData.party_list_id
+    };
+
+    console.log("Updating candidate with data:", payload);
+
+    const response = await axiosInstance.put('/api/edit-candidate', payload, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      }
+    });
+    
+    console.log("Candidate update response:", response.data);
+    return response.data;
+  } catch (error) {
+    console.error("Error updating candidate:", error);
+    
+    // Return structured error response
+    if (error.response && error.response.data) {
+      // Return error message from the backend
+      return {
+        success: false,
+        message: error.response.data.message || 'Failed to update candidate',
+        status: error.response.status
+      };
+    }
+    
+    // Generic error
+    return {
+      success: false,
+      message: error.message || 'Network error while updating candidate'
+    };
+  }
+};
+
+// Function to verify and make a user a candidate
+export const verifyAndMakeCandidate = async (token, candidateData) => {
+  try {
+    // Prepare the payload according to backend API requirements
+    const payload = {
+      student_id: candidateData.student_id,
+      position_id: candidateData.position_id,
+      election_id: candidateData.election_id,
+      party_list_id: candidateData.party_list_id
+    };
+
+    console.log("Verifying and creating candidate with data:", payload);
+
+    const response = await axiosInstance.post('/api/verify-make-candidate', payload, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      }
+    });
+    
+    console.log("Candidate creation response:", response.data);
+    return response.data;
+  } catch (error) {
+    console.error("Error creating candidate:", error);
+    
+    // Return structured error response
+    if (error.response && error.response.data) {
+      return {
+        success: false,
+        message: error.response.data.message || 'Failed to create candidate',
+        status: error.response.status
+      };
+    }
+    
+    // Generic error
+    return {
+      success: false,
+      message: error.message || 'Network error while creating candidate'
+    };
+  }
+};
+
+// Function to search for non-candidate users (role_id = 1)
+export const searchNonCandidateUsers = async (token, searchQuery = '') => {
+  try {
+    const response = await axiosInstance.get('/api/search-users', {
+      params: { search: searchQuery, role_id: 1 },
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      }
+    });
+    
+    return {
+      success: true,
+      users: response.data.users || []
+    };
+  } catch (error) {
+    console.error("Error searching for users:", error);
+    
+    return {
+      success: false,
+      users: [],
+      message: error.response?.data?.message || 'Failed to search for users'
+    };
+  }
+};
+
+// Function to get all student users (users with role_id=1)
+export const getStudentUsers = async (token, searchQuery = '', page = 1, perPage = 20, departmentId = null) => {
+  try {
+    // Build query parameters
+    const params = {
+      per_page: perPage,
+      page: page
+    };
+    
+    if (searchQuery) {
+      params.search = searchQuery;
+    }
+    
+    if (departmentId) {
+      params.department_id = departmentId;
+    }
+    
+    const response = await axiosInstance.get('/api/admin/users/students', {
+      params,
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      }
+    });
+    
+    return {
+      success: true,
+      students: response.data.users || [],
+      pagination: response.data.pagination || {}
+    };
+  } catch (error) {
+    console.error("Error fetching student users:", error);
+    
+    return {
+      success: false,
+      students: [],
+      pagination: {},
+      message: error.response?.data?.message || 'Failed to fetch student users'
+    };
+  }
+};
+
+// Remove candidate status and associated data
+export const removeCandidateStatus = async (token, candidateId) => {
+  try {
+    const response = await axiosInstance.delete(`/api/admin/remove-candidate/${candidateId}`, {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    });
+    
+    return {
+      success: true,
+      message: response.data.message || 'Candidate status successfully removed'
+    };
+  } catch (error) {
+    console.error("Error removing candidate status:", error);
+    
+    // Return structured error response
+    if (error.response && error.response.data) {
+      return {
+        success: false,
+        message: error.response.data.message || 'Failed to remove candidate status',
+        status: error.response.status
+      };
+    }
+    
+    // Generic error
+    return {
+      success: false,
+      message: error.message || 'Network error while removing candidate status'
+    };
+  }
+};
+
+// Function to approve a candidate's post
+export const approvePost = async (token, postId) => {
+  try {
+    const response = await axiosInstance.put(`/api/admin/posts/${postId}/approve`, {}, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      }
+    });
+    
+    return {
+      success: true,
+      message: response.data.message || 'Post approved successfully',
+      post: response.data.post
+    };
+  } catch (error) {
+    console.error("Error approving post:", error);
+    
+    // Return structured error response
+    if (error.response && error.response.data) {
+      return {
+        success: false,
+        message: error.response.data.message || 'Failed to approve post',
+        status: error.response.status
+      };
+    }
+    
+    // Generic error
+    return {
+      success: false,
+      message: error.message || 'Network error while approving post'
+    };
+  }
+};
+
+// Function to get all posts (admin only)
+export const getAllPostsAdmin = async (token, page = 1, perPage = 10) => {
+  try {
+    const response = await axiosInstance.get('/api/admin/posts/all', {
+      params: { page, per_page: perPage },
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      }
+    });
+    
+    return {
+      success: true,
+      posts: response.data.posts || [],
+      pagination: response.data.pagination || {}
+    };
+  } catch (error) {
+    console.error("Error fetching all posts:", error);
+    
+    return {
+      success: false,
+      posts: [],
+      pagination: {},
+      message: error.response?.data?.message || 'Failed to fetch posts'
+    };
+  }
+};
+
+// Create a new partylist
+export const createPartylist = async (token, partylistData) => {
+    try {
+        const response = await axiosInstance.post(`/api/partylist-make`, partylistData, {
+            headers: {
+                Authorization: `Bearer ${token}`,
+                'Content-Type': 'application/json',
+            }
+        });
+        
+        console.log('Create partylist response:', response.data);
+        
+        if (response.data && (response.data.success || response.data.partylist)) {
+            return {
+                success: true,
+                message: response.data.message || 'Partylist created successfully',
+                partylist: response.data.partylist
+            };
+        }
+        
+        return response.data;
+    } catch (error) {
+        console.error("Error creating partylist:", error);
+        
+        if (error.response) {
+            return { 
+                success: false, 
+                message: error.response.data.message || 'Failed to create partylist' 
+            };
+        } else {
+            return { 
+                success: false, 
+                message: error.message || 'Error creating partylist' 
+            };
+        }
+    }
+}
+
+// Update an existing partylist
+export const updatePartylist = async (token, partylistId, partylistData) => {
+    try {
+        const response = await axiosInstance.put(`/api/admin/partylist/${partylistId}`, partylistData, {
+            headers: {
+                Authorization: `Bearer ${token}`,
+                'Content-Type': 'application/json',
+            }
+        });
+        
+        console.log('Update partylist response:', response.data);
+        
+        if (response.data && (response.data.success !== false || response.data.partylist)) {
+            return {
+                success: true,
+                message: response.data.message || 'Partylist updated successfully',
+                partylist: response.data.partylist
+            };
+        }
+        
+        return response.data;
+    } catch (error) {
+        console.error("Error updating partylist:", error);
+        
+        if (error.response) {
+            return { 
+                success: false, 
+                message: error.response.data.message || 'Failed to update partylist' 
+            };
+        } else {
+            return { 
+                success: false, 
+                message: error.message || 'Error updating partylist' 
+            };
+        }
+    }
+}
+
+// Delete a partylist
+export const deletePartylist = async (token, partylistId) => {
+    try {
+        const response = await axiosInstance.delete(`/api/admin/partylist/${partylistId}`, {
+            headers: {
+                Authorization: `Bearer ${token}`
+            }
+        });
+        
+        console.log('Delete partylist response:', response.data);
+        
+        if (response.data && response.data.success !== false) {
+            return {
+                success: true,
+                message: response.data.message || 'Partylist deleted successfully'
+            };
+        }
+        
+        return response.data;
+    } catch (error) {
+        console.error("Error deleting partylist:", error);
+        
+        if (error.response) {
+            // Check for specific error cases
+            if (error.response.status === 403) {
+                return {
+                    success: false,
+                    message: 'Cannot delete party list with associated candidates',
+                    hasAssociatedCandidates: true
+                };
+            }
+            
+            return { 
+                success: false, 
+                message: error.response.data.message || 'Failed to delete partylist' 
+            };
+        } else {
+            return { 
+                success: false, 
+                message: error.message || 'Error deleting partylist' 
+            };
+        }
+    }
+}
+
 

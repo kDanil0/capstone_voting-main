@@ -33,6 +33,8 @@ import CreateElections from "./Pages/Admin/CreateElections";
 import ElectionsReport from "./Pages/Admin/ElectionResults";
 import CandidateManagement from "./Pages/Admin/CandidateManagement";
 import StudentManagement from "./Pages/Admin/StudentManagement";
+import PartylistsManagement from "./Pages/Admin/PartylistsManagement";
+import PostApproval from "./Components/admin/PostApproval";
 
 // Authentication Pages
 import Login from "./Pages/Login";
@@ -158,9 +160,14 @@ const AppContent = () => {
                   element={<ElectionDetailsAdmin />}
                 />
                 <Route path="elections/create" element={<CreateElections />} />
+                <Route
+                  path="elections/partylists"
+                  element={<PartylistsManagement />}
+                />
                 {/* <Route path="elections/results" element={<ElectionsReport />} /> */}
                 <Route path="candidates" element={<CandidateManagement />} />
                 <Route path="students" element={<StudentManagement />} />
+                <Route path="post-approval" element={<PostApproval />} />
               </Routes>
             </ProtectedRoute>
           }

@@ -6,6 +6,7 @@ import {
   FormatListBulleted,
   AddCircleOutlineOutlined,
   GridViewOutlined,
+  FlagOutlined,
 } from "@mui/icons-material";
 
 const AdminElection = () => {
@@ -28,13 +29,14 @@ const AdminElection = () => {
         "Start a new election by setting up election parameters and candidates.",
       onClick: () => navigate("/admin/elections/create"),
     },
-    // {
-    //   id: 3,
-    //   icon: <GridViewOutlined className="text-[#38738c]" />,
-    //   title: "View Election Results",
-    //   description: "View the results of all elections.",
-    //   onClick: () => navigate("/admin/elections/results")
-    // }
+    {
+      id: 3,
+      icon: <FlagOutlined className="text-orange-500" />,
+      title: "Partylists",
+      description:
+        "Manage partylists for elections. Create, update, or delete partylists for candidates.",
+      onClick: () => navigate("/admin/elections/partylists"),
+    },
   ];
 
   return (
