@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Upload, User, Edit, X, Check } from "lucide-react";
 import StatusBadge from "../CommonComponents/StatusBadge";
 import Post from "../Post";
-import { BASE_URL } from '../../utils/api';
+import { BASE_URL } from "../../utils/api";
 
 /**
  * CandidateProfile component displays a candidate's profile information, posts, and documents
@@ -14,11 +14,11 @@ import { BASE_URL } from '../../utils/api';
  */
 const CandidateProfile = ({ candidateData, onBioUpdate, onPhotoUpload }) => {
   const navigate = useNavigate();
-  
+
   // State management
   const [profileImage, setProfileImage] = useState(null);
   const [isEditingBio, setIsEditingBio] = useState(false);
-  const [newBio, setNewBio] = useState(candidateData?.bio || '');
+  const [newBio, setNewBio] = useState(candidateData?.bio || "");
   const [isUploading, setIsUploading] = useState(false);
   const [imageError, setImageError] = useState(false);
 
@@ -47,7 +47,7 @@ const CandidateProfile = ({ candidateData, onBioUpdate, onPhotoUpload }) => {
       await onBioUpdate(newBio);
       setIsEditingBio(false);
     } catch (error) {
-      console.error('Failed to update bio:', error);
+      console.error("Failed to update bio:", error);
     }
   };
 
@@ -74,8 +74,8 @@ const CandidateProfile = ({ candidateData, onBioUpdate, onPhotoUpload }) => {
    */
   const getStorageUrl = (path) => {
     if (!path) return null;
-    const baseUrl = BASE_URL.replace(/\/+$/, '');
-    const cleanPath = path.replace(/^\/+/, '');
+    const baseUrl = BASE_URL.replace(/\/+$/, "");
+    const cleanPath = path.replace(/^\/+/, "");
     return `${baseUrl}/storage/${cleanPath}`;
   };
 
@@ -95,12 +95,12 @@ const CandidateProfile = ({ candidateData, onBioUpdate, onPhotoUpload }) => {
     const imageUrl = getStorageUrl(candidateData.profile_photo);
 
     return (
-      <img 
+      <img
         src={imageUrl}
-        alt={candidateData.user?.name || 'Profile'}
+        alt={candidateData.user?.name || "Profile"}
         className="w-full h-full object-cover rounded-full"
         onError={(e) => {
-          console.error('Image failed to load:', e);
+          console.error("Image failed to load:", e);
           setImageError(true);
         }}
       />
@@ -120,8 +120,8 @@ const CandidateProfile = ({ candidateData, onBioUpdate, onPhotoUpload }) => {
             {/* Banner Image */}
             <div className="h-48 bg-[#38438c] rounded-t-lg relative">
               {candidateData?.banner_image && (
-                <img 
-                  src={`/storage/${candidateData.banner_image}`}
+                <img
+                  src={getStorageUrl(candidateData.banner_image)}
                   alt="Banner"
                   className="w-full h-full object-cover rounded-t-lg"
                 />
@@ -137,9 +137,9 @@ const CandidateProfile = ({ candidateData, onBioUpdate, onPhotoUpload }) => {
                     {renderProfileImage()}
                   </div>
                   <label className="absolute bottom-0 right-0 bg-[#38438c] text-white p-2 rounded-full cursor-pointer hover:bg-[#4B5FCD] shadow-md transition-colors">
-                    <input 
-                      type="file" 
-                      className="hidden" 
+                    <input
+                      type="file"
+                      className="hidden"
                       accept="image/*"
                       onChange={handlePhotoChange}
                       disabled={isUploading}
@@ -149,10 +149,16 @@ const CandidateProfile = ({ candidateData, onBioUpdate, onPhotoUpload }) => {
                 </div>
 
                 {/* Candidate Details */}
-                <div className="ml-4 mb-1">
-                  <h1 className="text-2xl font-bold text-gray-800">{candidateData?.user?.name}</h1>
-                  <p className="text-gray-600">{candidateData?.position?.name}</p>
-                  <div className="text-[#38438c] font-medium">{candidateData?.partylist?.name}</div>
+                <div className="ml-4 -mb-4">
+                  <h1 className="text-2xl font-bold text-gray-800">
+                    {candidateData?.user?.name}
+                  </h1>
+                  <p className="text-gray-600">
+                    {candidateData?.position?.name}
+                  </p>
+                  <div className="text-[#38438c] font-medium">
+                    {candidateData?.partylist?.name}
+                  </div>
                 </div>
               </div>
             </div>
@@ -167,7 +173,7 @@ const CandidateProfile = ({ candidateData, onBioUpdate, onPhotoUpload }) => {
                     <button
                       onClick={() => {
                         setIsEditingBio(true);
-                        setNewBio(candidateData?.bio || '');
+                        setNewBio(candidateData?.bio || "");
                       }}
                       className="text-[#38438c] hover:text-[#4B5FCD] transition-colors"
                       aria-label="Edit bio"
@@ -176,7 +182,7 @@ const CandidateProfile = ({ candidateData, onBioUpdate, onPhotoUpload }) => {
                     </button>
                   )}
                 </div>
-                
+
                 {/* Bio Content - Edit Mode or Display Mode */}
                 {isEditingBio ? (
                   <div className="space-y-3">
@@ -191,7 +197,7 @@ const CandidateProfile = ({ candidateData, onBioUpdate, onPhotoUpload }) => {
                       <button
                         onClick={() => {
                           setIsEditingBio(false);
-                          setNewBio(candidateData?.bio || '');
+                          setNewBio(candidateData?.bio || "");
                         }}
                         className="p-1.5 text-gray-500 hover:text-gray-700 rounded-full hover:bg-gray-100 transition-colors"
                         aria-label="Cancel"
@@ -208,8 +214,8 @@ const CandidateProfile = ({ candidateData, onBioUpdate, onPhotoUpload }) => {
                     </div>
                   </div>
                 ) : (
-                  <p className="text-gray-600 leading-relaxed">
-                    {candidateData?.bio || 'No bio available'}
+                  <p className="text-gray-600 leading-relaxed border border-gray-200 rounded-lg p-2">
+                    {candidateData?.bio || "No bio available"}
                   </p>
                 )}
               </div>
@@ -220,10 +226,7 @@ const CandidateProfile = ({ candidateData, onBioUpdate, onPhotoUpload }) => {
           <div className="bg-white rounded-lg shadow-sm overflow-hidden mb-6">
             <div className="px-6 py-5">
               <h2 className="font-bold text-gray-800 mb-4">Posts</h2>
-              <Post 
-                readOnly={false} 
-                candidateId={candidateData.id}
-              />
+              <Post readOnly={false} candidateId={candidateData.id} />
             </div>
           </div>
         </div>
@@ -232,22 +235,29 @@ const CandidateProfile = ({ candidateData, onBioUpdate, onPhotoUpload }) => {
         <div className="w-[320px]">
           <div className="bg-white rounded-lg shadow-sm p-5">
             <h2 className="font-bold text-lg mb-4 text-gray-800">Documents</h2>
-            
+
             {/* Document Upload Area */}
             <div className="border-2 border-dashed border-gray-200 rounded-lg p-4 mb-5 text-center">
-              <p className="text-gray-500 text-sm">Drag and drop files here to upload</p>
+              <p className="text-gray-500 text-sm">
+                Drag and drop files here to upload
+              </p>
             </div>
-            
+
             {/* Document List */}
             <div className="space-y-2.5">
               {/* Example documents - replace with actual data */}
               {[
-                {name: 'PLATFORM PROPOSAL', status: 'APPROVED'},
-                {name: 'LEAVE OF CONSULTATION', status: 'APPROVED'},
-                {name: 'INCREASE OF FUNDS', status: 'APPROVED'}
+                { name: "PLATFORM PROPOSAL", status: "APPROVED" },
+                { name: "LEAVE OF CONSULTATION", status: "APPROVED" },
+                { name: "INCREASE OF FUNDS", status: "APPROVED" },
               ].map((doc, index) => (
-                <div key={index} className="flex items-center justify-between bg-gray-50 p-2.5 rounded">
-                  <span className="text-sm font-medium text-gray-700">{doc.name}</span>
+                <div
+                  key={index}
+                  className="flex items-center justify-between bg-gray-50 p-2.5 rounded"
+                >
+                  <span className="text-sm font-medium text-gray-700">
+                    {doc.name}
+                  </span>
                   <span className="text-xs px-2 py-1 bg-green-50 text-green-600 rounded font-medium">
                     {doc.status}
                   </span>
@@ -263,23 +273,25 @@ const CandidateProfile = ({ candidateData, onBioUpdate, onPhotoUpload }) => {
 
 export default CandidateProfile;
 
-{/* Add this CSS to your global styles or as a style tag */}
+{
+  /* Add this CSS to your global styles or as a style tag */
+}
 <style jsx>{`
   .custom-scrollbar::-webkit-scrollbar {
     width: 6px;
   }
-  
+
   .custom-scrollbar::-webkit-scrollbar-track {
     background: rgba(56, 115, 140, 0.1);
     border-radius: 10px;
   }
-  
+
   .custom-scrollbar::-webkit-scrollbar-thumb {
     background: rgba(56, 115, 140, 0.3);
     border-radius: 10px;
   }
-  
+
   .custom-scrollbar::-webkit-scrollbar-thumb:hover {
     background: rgba(56, 115, 140, 0.5);
   }
-`}</style>
+`}</style>;
