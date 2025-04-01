@@ -4,45 +4,19 @@ import {
   getAdminElectionDetails,
   editElection,
   deleteElection,
-  BASE_URL,
 } from "../../utils/api";
 import { useAuthContext } from "../../utils/AuthContext";
 import DashboardHeader from "../../components/admin/DashboardHeader";
-import {
-  Card,
-  Row,
-  Col,
-  Typography,
-  Table,
-  Tag,
-  Descriptions,
-  Spin,
-  Alert,
-  Button,
-  Space,
-  Avatar,
-  Badge,
-  Divider,
-  Modal,
-  Form,
-  Input,
-  Select,
-  message,
-  Popconfirm,
-} from "antd";
-import {
-  CalendarOutlined,
-  TeamOutlined,
-  UserOutlined,
-  ApartmentOutlined,
-  FlagOutlined,
-  EditOutlined,
-  DeleteOutlined,
-  ExclamationCircleOutlined,
-} from "@ant-design/icons";
+import { Row, Col, Spin, Alert, Button, message, Tabs } from "antd";
 
-const { Title, Text } = Typography;
-const { Option } = Select;
+// Import modular components
+import ElectionHeader from "../../components/admin/election-details/ElectionHeader";
+import ElectionInformation from "../../components/admin/election-details/ElectionInformation";
+import PositionsTable from "../../components/admin/election-details/PositionsTable";
+import CandidatesTable from "../../components/admin/election-details/CandidatesTable";
+import EditElectionModal from "../../components/admin/election-details/EditElectionModal";
+import DeleteConfirmationModal from "../../components/admin/election-details/DeleteConfirmationModal";
+import ResultsTab from "../../components/admin/election-details/ResultsTab";
 
 /**
  * Admin component for viewing and editing election details
@@ -58,6 +32,7 @@ const ElectionDetailsAdmin = () => {
   const [isDeleteConfirmVisible, setIsDeleteConfirmVisible] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [activeTab, setActiveTab] = useState("details");
   const [formData, setFormData] = useState({
     election_id: "",
     election_name: "",
@@ -175,7 +150,7 @@ const ElectionDetailsAdmin = () => {
   /**
    * Open the edit modal and initialize form data
    */
-  const showEditModal = () => {
+  const handleEditClick = () => {
     if (electionData && electionData.election) {
       const election = electionData.election;
 
@@ -196,7 +171,7 @@ const ElectionDetailsAdmin = () => {
   /**
    * Show delete confirmation dialog
    */
-  const showDeleteConfirm = () => {
+  const handleDeleteClick = () => {
     setIsDeleteConfirmVisible(true);
   };
 
@@ -286,84 +261,13 @@ const ElectionDetailsAdmin = () => {
     }
   };
 
-  // Candidate table columns
-  const candidateColumns = [
-    {
-      title: "Candidate",
-      dataIndex: "user",
-      key: "name",
-      render: (user) => (
-        <Space>
-          <Avatar size="small" icon={<UserOutlined />} />
-          {user?.name || "Unknown"}
-        </Space>
-      ),
-    },
-    {
-      title: "Position",
-      dataIndex: "position_id",
-      key: "position",
-      render: (positionId) => {
-        const position = electionData?.positions?.find(
-          (p) => p.id === positionId
-        );
-        return position ? (
-          <Tag color="blue">{position.name}</Tag>
-        ) : (
-          <Text type="secondary">Not assigned</Text>
-        );
-      },
-    },
-    {
-      title: "Party List",
-      dataIndex: "partyList",
-      key: "partyList",
-      render: (partyList) =>
-        partyList ? (
-          <Tag color="purple">
-            <FlagOutlined /> {partyList.name}
-          </Tag>
-        ) : (
-          <Text type="secondary">Independent</Text>
-        ),
-    },
-    {
-      title: "Department",
-      dataIndex: "department",
-      key: "department",
-      render: (department) =>
-        department ? (
-          <Tag color="cyan">
-            <ApartmentOutlined /> {department.name}
-          </Tag>
-        ) : (
-          <Text type="secondary">Not specified</Text>
-        ),
-    },
-  ];
-
-  // Position table columns
-  const positionColumns = [
-    {
-      title: "Position Name",
-      dataIndex: "name",
-      key: "name",
-    },
-    {
-      title: "Candidates",
-      key: "candidates",
-      render: (_, record) => {
-        const count =
-          electionData?.candidates?.filter((c) => c.position_id === record.id)
-            .length || 0;
-        return (
-          <Tag color={count > 0 ? "green" : "orange"}>
-            {count} candidate{count !== 1 ? "s" : ""}
-          </Tag>
-        );
-      },
-    },
-  ];
+  /**
+   * Handle tab change
+   * @param {string} key - Tab key
+   */
+  const handleTabChange = (key) => {
+    setActiveTab(key);
+  };
 
   // Loading state
   if (loading) {
@@ -427,275 +331,90 @@ const ElectionDetailsAdmin = () => {
   const election = electionData.election;
   const status = getElectionStatus();
 
+  // Tab items configuration
+  const tabItems = [
+    {
+      key: "details",
+      label: "Election Details",
+      children: (
+        <div className="bg-white shadow-sm rounded-lg p-4">
+          {/* Election Info and Positions */}
+          <Row gutter={[16, 16]}>
+            <Col xs={24} lg={12}>
+              <ElectionInformation
+                election={election}
+                status={status}
+                formatDate={formatDate}
+              />
+            </Col>
+
+            <Col xs={24} lg={12}>
+              <PositionsTable
+                positions={electionData.positions}
+                candidates={electionData.candidates}
+              />
+            </Col>
+          </Row>
+
+          {/* Candidates Section */}
+          <CandidatesTable
+            candidates={electionData.candidates}
+            positions={electionData.positions}
+          />
+        </div>
+      ),
+    },
+    {
+      key: "results",
+      label: "Election Results",
+      children: (
+        <div className="bg-white shadow-sm rounded-lg p-4">
+          <ResultsTab electionData={electionData} />
+        </div>
+      ),
+    },
+  ];
+
   return (
     <div className="container mx-auto p-6 bg-gray-50">
       <DashboardHeader title="Election Details" />
 
       {/* Election Header */}
-      <Card className="mb-4 shadow-sm">
-        <Row gutter={[16, 16]} align="middle">
-          <Col xs={24} md={16}>
-            <Title level={3} style={{ color: "#38438c", marginBottom: 4 }}>
-              {election.election_name}
-            </Title>
-            <Space size="middle">
-              <Tag color={status.color}>{status.text}</Tag>
-              <Text type="secondary">
-                <CalendarOutlined /> Voting Period:{" "}
-                {formatDate(election.election_start_date)} to{" "}
-                {formatDate(election.election_end_date)}
-              </Text>
-            </Space>
-          </Col>
-          <Col xs={24} md={8} className="text-right">
-            <Space>
-              <Button
-                type="primary"
-                icon={<EditOutlined />}
-                onClick={showEditModal}
-                style={{ backgroundColor: "#38438c" }}
-              >
-                Edit Election
-              </Button>
-              <Button
-                type="primary"
-                danger
-                icon={<DeleteOutlined />}
-                onClick={showDeleteConfirm}
-              >
-                Delete
-              </Button>
-              <Button onClick={() => navigate("/admin/elections/view")}>
-                Back
-              </Button>
-            </Space>
-          </Col>
-        </Row>
-      </Card>
+      <ElectionHeader
+        election={election}
+        status={status}
+        formatDate={formatDate}
+        onEditClick={handleEditClick}
+        onDeleteClick={handleDeleteClick}
+      />
 
-      {/* Main Content */}
-      <div className="bg-white shadow-sm rounded-lg p-4">
-        {/* Election Info and Positions */}
-        <Row gutter={[16, 16]}>
-          <Col xs={24} lg={12}>
-            <Card title="Election Information" bordered={false} size="small">
-              <Descriptions column={1} size="small" variant="bordered">
-                <Descriptions.Item label="Name">
-                  {election.election_name}
-                </Descriptions.Item>
-                <Descriptions.Item label="Status">
-                  <Tag color={status.color}>{status.text}</Tag>
-                </Descriptions.Item>
-                <Descriptions.Item label="Department">
-                  {election.department_id || "All Departments"}
-                </Descriptions.Item>
-                <Descriptions.Item label="Campaign Period">
-                  {formatDate(election.campaign_start_date)} to{" "}
-                  {formatDate(election.campaign_end_date)}
-                </Descriptions.Item>
-                <Descriptions.Item label="Voting Period">
-                  {formatDate(election.election_start_date)} to{" "}
-                  {formatDate(election.election_end_date)}
-                </Descriptions.Item>
-              </Descriptions>
-            </Card>
-          </Col>
-
-          <Col xs={24} lg={12}>
-            <Card title="Positions" bordered={false} size="small">
-              <Table
-                dataSource={electionData.positions}
-                columns={positionColumns}
-                rowKey="id"
-                pagination={false}
-                size="small"
-              />
-            </Card>
-          </Col>
-        </Row>
-
-        {/* Candidates Section */}
-        <Card
-          title={
-            <Title level={5}>
-              <TeamOutlined /> Candidates (
-              {electionData.candidates?.length || 0})
-            </Title>
-          }
-          className="mt-4"
-          bordered={false}
-        >
-          <Table
-            dataSource={electionData.candidates}
-            columns={candidateColumns}
-            rowKey="id"
-            pagination={{ pageSize: 10 }}
-            size="middle"
-          />
-        </Card>
-      </div>
+      {/* Tabs Navigation */}
+      <Tabs
+        activeKey={activeTab}
+        onChange={handleTabChange}
+        items={tabItems}
+        className="mb-4"
+        type="card"
+      />
 
       {/* Edit Election Modal */}
-      <Modal
-        title="Edit Election"
-        open={isEditModalVisible}
+      <EditElectionModal
+        visible={isEditModalVisible}
         onCancel={() => setIsEditModalVisible(false)}
-        footer={null}
-        width={700}
-      >
-        <form onSubmit={handleEditSubmit} className="space-y-4">
-          <input
-            type="hidden"
-            name="election_id"
-            value={formData.election_id}
-          />
-
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700">
-              Election Name
-            </label>
-            <Input
-              name="election_name"
-              value={formData.election_name}
-              onChange={handleInputChange}
-              placeholder="Election Name"
-              required
-            />
-          </div>
-
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700">
-              Status
-            </label>
-            <Select
-              name="status"
-              value={formData.status}
-              onChange={handleSelectChange}
-              placeholder="Select Status"
-              style={{ width: "100%" }}
-            >
-              <Option value="upcoming">Upcoming</Option>
-              <Option value="ongoing">Ongoing</Option>
-              <Option value="completed">Completed</Option>
-            </Select>
-          </div>
-
-          <Row gutter={16}>
-            <Col span={12}>
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700">
-                  Campaign Start Date
-                </label>
-                <input
-                  type="datetime-local"
-                  name="campaign_start_date"
-                  value={formData.campaign_start_date}
-                  onChange={handleInputChange}
-                  className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2"
-                  required
-                />
-              </div>
-            </Col>
-            <Col span={12}>
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700">
-                  Campaign End Date
-                </label>
-                <input
-                  type="datetime-local"
-                  name="campaign_end_date"
-                  value={formData.campaign_end_date}
-                  onChange={handleInputChange}
-                  className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2"
-                  required
-                />
-              </div>
-            </Col>
-          </Row>
-
-          <Row gutter={16}>
-            <Col span={12}>
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700">
-                  Election Start Date
-                </label>
-                <input
-                  type="datetime-local"
-                  name="election_start_date"
-                  value={formData.election_start_date}
-                  onChange={handleInputChange}
-                  className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2"
-                  required
-                />
-              </div>
-            </Col>
-            <Col span={12}>
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700">
-                  Election End Date
-                </label>
-                <input
-                  type="datetime-local"
-                  name="election_end_date"
-                  value={formData.election_end_date}
-                  onChange={handleInputChange}
-                  className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2"
-                  required
-                />
-              </div>
-            </Col>
-          </Row>
-
-          <div className="flex justify-end space-x-3 mt-4">
-            <Button onClick={() => setIsEditModalVisible(false)}>Cancel</Button>
-            <Button
-              type="primary"
-              htmlType="submit"
-              loading={submitting}
-              style={{ backgroundColor: "#38438c" }}
-            >
-              Save Changes
-            </Button>
-          </div>
-        </form>
-      </Modal>
+        onSubmit={handleEditSubmit}
+        formData={formData}
+        handleInputChange={handleInputChange}
+        handleSelectChange={handleSelectChange}
+        submitting={submitting}
+      />
 
       {/* Delete Confirmation Modal */}
-      <Modal
-        title={
-          <span>
-            <ExclamationCircleOutlined
-              style={{ color: "#ff4d4f", marginRight: "8px" }}
-            />
-            Delete Election
-          </span>
-        }
-        open={isDeleteConfirmVisible}
+      <DeleteConfirmationModal
+        visible={isDeleteConfirmVisible}
         onCancel={() => setIsDeleteConfirmVisible(false)}
-        footer={[
-          <Button key="cancel" onClick={() => setIsDeleteConfirmVisible(false)}>
-            Cancel
-          </Button>,
-          <Button
-            key="delete"
-            type="primary"
-            danger
-            loading={deleting}
-            onClick={handleDeleteElection}
-          >
-            Delete
-          </Button>,
-        ]}
-      >
-        <p>Are you sure you want to delete this election?</p>
-        <p>
-          <strong>This action cannot be undone.</strong>
-        </p>
-        <p>
-          All data associated with this election, including positions and
-          candidate applications, will be permanently removed.
-        </p>
-      </Modal>
+        onDelete={handleDeleteElection}
+        deleting={deleting}
+      />
     </div>
   );
 };

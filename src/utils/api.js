@@ -1432,4 +1432,50 @@ export const deletePartylist = async (token, partylistId) => {
     }
 }
 
+/**
+ * Get election results for a specific election
+ * @param {string} token - Auth token
+ * @param {number} electionId - ID of the election
+ * @returns {Object} Response with election results data
+ */
+export const getElectionResults = async (token, electionId) => {
+  try {
+    const response = await axiosInstance.get(`api/admin/elections/${electionId}/results`, {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    });
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching election results:", error);
+    return {
+      success: false,
+      message: error.response?.data?.message || 'Failed to fetch election results'
+    };
+  }
+};
+
+/**
+ * Get voter turnout statistics for a specific election
+ * @param {string} token - Auth token
+ * @param {number} electionId - ID of the election
+ * @returns {Object} Response with voter turnout data
+ */
+export const getElectionTurnout = async (token, electionId) => {
+  try {
+    const response = await axiosInstance.get(`api/admin/elections/${electionId}/turnout`, {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    });
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching election turnout:", error);
+    return {
+      success: false,
+      message: error.response?.data?.message || 'Failed to fetch election turnout'
+    };
+  }
+};
+
 

@@ -26,6 +26,19 @@ const VotingProcess = () => {
   const [currentPositionIndex, setCurrentPositionIndex] = useState(0);
   const [showSummary, setShowSummary] = useState(false);
 
+  // Function to format profile photo URL consistently
+  const formatProfilePhotoUrl = (photoPath) => {
+    if (!photoPath) return null;
+
+    // If it's already a full URL, return it as is
+    if (photoPath.startsWith("http")) {
+      return photoPath;
+    }
+
+    // Otherwise, prepend the storage path
+    return `http://127.0.0.1:8000/storage/${photoPath}`;
+  };
+
   // Fetch election and candidates data
   useEffect(() => {
     const fetchVotingData = async () => {
@@ -37,25 +50,20 @@ const VotingProcess = () => {
         const electionResponse = await getElectionById(token, id);
         console.log("Election response:", electionResponse);
 
-        // Check if the response indicates an error
         if (!electionResponse || electionResponse.success === false) {
-          // Use the detailed error message from our improved API error handling
           throw new Error(
             electionResponse?.message || "Failed to load election data"
           );
         }
 
-        // Check if we have election property to ensure the right response structure
         let electionData = electionResponse.election;
         if (!electionData) {
-          // If the election data is in a different format, try to find it elsewhere in the response
           if (electionResponse.data && electionResponse.data.election) {
             electionData = electionResponse.data.election;
           } else if (
             typeof electionResponse === "object" &&
             !Array.isArray(electionResponse)
           ) {
-            // If response is an object and not explicitly showing an error, try to use it directly
             electionData = electionResponse;
           } else {
             throw new Error("No election data found in server response");
@@ -64,11 +72,31 @@ const VotingProcess = () => {
 
         setElection(electionData);
 
-        // Get candidates grouped by position - add better error handling here too
+        // Get candidates grouped by position
         try {
           const candidatesResponse = await getCandidatesByElection(id);
+          console.log("Candidates response:", candidatesResponse);
+
           if (candidatesResponse && candidatesResponse.data) {
-            setPositions(candidatesResponse.data);
+            // Process the positions data to include formatted profile photos
+            const processedPositions = candidatesResponse.data.map(
+              (position) => ({
+                ...position,
+                candidates: position.candidates.map((candidate) => ({
+                  ...candidate,
+                  profile_photo: candidate.profile_photo
+                    ? formatProfilePhotoUrl(candidate.profile_photo)
+                    : null,
+                  // These fields are already properly structured from the backend
+                  name: candidate.name,
+                  party_list: candidate.party_list,
+                  department: candidate.department,
+                })),
+              })
+            );
+
+            console.log("Processed positions:", processedPositions);
+            setPositions(processedPositions);
           } else {
             throw new Error("No position data received from server");
           }

@@ -1,23 +1,27 @@
-import React from "react";
+import React, { useState } from "react";
 import Post from "../Post";
+import { Image } from "antd";
 
 const CandidateProfileView = ({ candidate }) => {
-  // Default candidate data (replace with props or API data)
-  const defaultCandidate = {
-    name: "Cullera, Michael Angelo",
-    partylist: "TAKBONGKABAYO PARTYLIST",
-    position: "CCIS VP CANDIDATE",
-    image: "/path/to/candidate-image.jpg",
-    bio: "Ako gawin niyong vice president, walang required bayaran at walang corruption",
-    platform: [
-      "MAGING POGI AT MAGANDA LAHAT",
-      "PEDE KAHIT ANONG ASTETIK",
-      "MAGANDANG DEPT SHIRT",
-      "DI PAPANG LABAS ANG FUNDS"
-    ]
-  };
+  const [imageError, setImageError] = useState(false);
+  const defaultProfileImage = "/default-profile.png"; // Default fallback image
 
   const candidateData = candidate || defaultCandidate;
+
+  // Function to get the correct image path
+  const getImagePath = (imagePath) => {
+    if (!imagePath) return defaultProfileImage;
+
+    // If the path is already a full URL, use it as is
+    if (imagePath.startsWith("http")) return imagePath;
+
+    // If the path is just the filename, construct the full path
+    if (!imagePath.startsWith("/")) {
+      return `/profile_photos/${imagePath}`;
+    }
+
+    return imagePath;
+  };
 
   return (
     <div className="w-full max-w-7xl mx-auto space-y-6">
@@ -25,9 +29,9 @@ const CandidateProfileView = ({ candidate }) => {
       <div className="bg-white rounded-lg shadow-md overflow-hidden">
         {/* Banner Image */}
         <div className="relative h-56 bg-[#3F4B8C] overflow-hidden">
-          <img 
-            src="/path/to/partylist-banner.jpg" 
-            alt="PARTYLIST BANNER PICTURE" 
+          <img
+            src="/path/to/partylist-banner.jpg"
+            alt="PARTYLIST BANNER PICTURE"
             className="w-full h-full object-cover"
           />
         </div>
@@ -37,10 +41,12 @@ const CandidateProfileView = ({ candidate }) => {
           {/* Profile Picture - Overlapping Banner */}
           <div className="absolute -top-12 left-6">
             <div className="w-24 h-24 rounded-full border-4 border-white bg-white overflow-hidden shadow-lg">
-              <img 
-                src={candidateData.image} 
+              <Image
+                src={getImagePath(candidateData.image)}
                 alt={candidateData.name}
                 className="w-full h-full object-cover"
+                fallback={defaultProfileImage}
+                preview={false}
               />
             </div>
           </div>
@@ -64,9 +70,7 @@ const CandidateProfileView = ({ candidate }) => {
           <div className="grid grid-cols-2 gap-6 mt-6">
             {/* Bio Box */}
             <div className="border border-[#3F4B8C] border-dashed rounded-md p-4">
-              <h3 className="text-[#3F4B8C] font-bebas">
-                {candidateData.bio}
-              </h3>
+              <h3 className="text-[#3F4B8C] font-bebas">{candidateData.bio}</h3>
             </div>
 
             {/* Platform Box */}
@@ -82,4 +86,4 @@ const CandidateProfileView = ({ candidate }) => {
   );
 };
 
-export default CandidateProfileView; 
+export default CandidateProfileView;

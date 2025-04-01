@@ -7,8 +7,8 @@ import {
   Navigate,
 } from "react-router-dom";
 import AuthContextProvider from "./utils/AuthContext";
-import Layout from "./Components/layout/Layout";
 import { useAuthContext } from "./utils/AuthContext";
+import Layout from "./Components/layout/Layout";
 import "antd/dist/reset.css";
 
 // Layout Components
@@ -24,6 +24,9 @@ import VotingProcess from "./Pages/Voters/VotingProcess";
 import Candidates from "./Pages/Candidate/Candidates";
 import UserCandidates from "./Pages/Candidate/UserCandidates";
 import CandidateProfilePage from "./Pages/Candidate/CandidateProfilePage";
+import CandidateProfile from "./Components/Candidate/CandidateProfile";
+import CandidateProfileView from "./Components/Candidate/CandidateProfileView";
+import CandidatePost from "./Pages/Candidate/CandidatePost";
 
 // Admin Pages
 import AdminElection from "./Pages/Admin/AdminElection";
@@ -35,96 +38,73 @@ import CandidateManagement from "./Pages/Admin/CandidateManagement";
 import StudentManagement from "./Pages/Admin/StudentManagement";
 import PartylistsManagement from "./Pages/Admin/PartylistsManagement";
 import PostApproval from "./Components/admin/PostApproval";
+import AdminDashboard from "./Components/AdminDashboard";
 
 // Authentication Pages
 import Login from "./Pages/Login";
 import Verify_OTP from "./Pages/Verify-OTP";
 
-import CandidateProfile from "./Components/Candidate/CandidateProfile";
-import CandidateProfileView from "./Components/Candidate/CandidateProfileView";
-
-// Post Components - Make sure these exist or create them
+// Post Components
 import Posts from "./Pages/Posts";
-import CandidatePost from "./Pages/Candidate/CandidatePost";
 
+/**
+ * Protected route component that handles authentication and role-based access
+ */
 const ProtectedRoute = ({ children, allowedRoles }) => {
   const { user, setUser } = useAuthContext();
   const location = useLocation();
   const [checkedStorage, setCheckedStorage] = useState(false);
   const [localUser, setLocalUser] = useState(null);
 
-  // Debug flag - only log in development
-  const DEBUG = process.env.NODE_ENV === "development";
-
   // On first render, check localStorage for user data if not in context
   useEffect(() => {
     if (!user && !checkedStorage) {
-      // Try to get user from localStorage
       try {
         const storedUser = localStorage.getItem("user");
         if (storedUser) {
           const parsedUser = JSON.parse(storedUser);
-          if (DEBUG) console.log("🔄 Route: Found user in localStorage");
           setLocalUser(parsedUser);
           setUser(parsedUser); // Update context
         }
       } catch (e) {
-        console.error("❌ Route: Error parsing user from localStorage");
+        // Silent error handling
       }
       setCheckedStorage(true);
     }
-  }, [user, checkedStorage, setUser, DEBUG]);
+  }, [user, checkedStorage, setUser]);
 
   // Use either context user or localStorage user
   const effectiveUser = user || localUser;
 
-  // Log route access info - grouped for clarity
-  useEffect(() => {
-    if (DEBUG) {
-      console.groupCollapsed(`🛡️ Protected Route: ${location.pathname}`);
-      console.log(
-        "User:",
-        effectiveUser
-          ? `ID: ${effectiveUser.id}, Role: ${effectiveUser.role_id}`
-          : "Not authenticated"
-      );
-      if (allowedRoles) console.log("Required roles:", allowedRoles);
-      console.groupEnd();
-    }
-  }, [effectiveUser, allowedRoles, location.pathname, DEBUG]);
-
+  // Handle unauthenticated access
   if (!effectiveUser) {
-    if (DEBUG) console.log("⚠️ Route: No user found, redirecting to login");
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
+  // Handle unauthorized access (wrong role)
   if (allowedRoles && !allowedRoles.includes(effectiveUser.role_id)) {
-    if (DEBUG) console.log("⚠️ Route: User role not authorized");
     return <Navigate to="/" replace />;
   }
 
   return children;
 };
 
+/**
+ * Main application content with routes
+ */
 const AppContent = () => {
-  const { user } = useAuthContext();
-  const location = useLocation();
-
   return (
     <Layout>
       <Routes>
-        {/* Public Routes - No authentication required */}
+        {/* Public Routes */}
         <Route path="/" element={<Home />} />
         <Route path="/election" element={<Election />} />
         <Route path="/election/:id" element={<ElectionDetails />} />
         <Route path="/login" element={<Login />} />
         <Route path="/posts" element={<Posts />} />
-
-        {/* Public Candidate Profile View */}
         <Route path="/view-candidates/:id" element={<CandidateProfileView />} />
 
-        {/* Protected Routes - Requires Authentication */}
-        {/* Voting Process - Requires Authentication */}
+        {/* Protected Voter Routes */}
         <Route
           path="/election/:id/vote"
           element={
@@ -134,7 +114,7 @@ const AppContent = () => {
           }
         />
 
-        {/* Candidate Protected Routes */}
+        {/* Protected Candidate Routes */}
         <Route
           path="/candidate/*"
           element={
@@ -147,12 +127,13 @@ const AppContent = () => {
           }
         />
 
-        {/* Admin Protected Routes */}
+        {/* Protected Admin Routes */}
         <Route
           path="/admin/*"
           element={
             <ProtectedRoute allowedRoles={[3]}>
               <Routes>
+                <Route path="dashboard" element={<AdminDashboard />} />
                 <Route path="elections" element={<AdminElection />} />
                 <Route path="elections/view" element={<ViewAllElections />} />
                 <Route
@@ -164,7 +145,6 @@ const AppContent = () => {
                   path="elections/partylists"
                   element={<PartylistsManagement />}
                 />
-                {/* <Route path="elections/results" element={<ElectionsReport />} /> */}
                 <Route path="candidates" element={<CandidateManagement />} />
                 <Route path="students" element={<StudentManagement />} />
                 <Route path="post-approval" element={<PostApproval />} />
@@ -177,6 +157,9 @@ const AppContent = () => {
   );
 };
 
+/**
+ * Main App component
+ */
 const App = () => {
   return (
     <AuthContextProvider>

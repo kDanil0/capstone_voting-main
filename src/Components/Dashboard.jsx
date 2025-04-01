@@ -39,6 +39,7 @@ import {
   Title,
 } from "chart.js";
 import { Pie, Bar } from "react-chartjs-2";
+import ChartDataLabels from "chartjs-plugin-datalabels";
 
 // Register Chart.js components
 ChartJS.register(
@@ -48,7 +49,8 @@ ChartJS.register(
   CategoryScale,
   LinearScale,
   BarElement,
-  Title
+  Title,
+  ChartDataLabels // Register the datalabels plugin
 );
 
 const Dashboard = () => {
@@ -57,7 +59,6 @@ const Dashboard = () => {
   const [selectedPosition, setSelectedPosition] = useState("all");
   const [viewMode, setViewMode] = useState("list");
   const [error, setError] = useState(null);
-  const [debugMode, setDebugMode] = useState(false);
 
   // For multiple elections
   const [elections, setElections] = useState([]);
@@ -158,89 +159,9 @@ const Dashboard = () => {
       }
     } catch (err) {
       console.error("Error fetching elections:", err);
-      // Fall back to mock data for development
-      if (process.env.NODE_ENV !== "production") {
-        console.log("Using mock elections data for development");
-        setElections(mockElections);
-        setSelectedElectionId(mockElections[0].id);
-      }
     } finally {
       setLoadingElections(false);
     }
-  };
-
-  // Mock elections for testing
-  const mockElections = [
-    {
-      id: 1,
-      name: "Supreme Student Council Mock Elections 2025",
-      status: "ongoing",
-    },
-    { id: 2, name: "College of Science Elections 2025", status: "ongoing" },
-    { id: 3, name: "Student Organization Elections", status: "completed" },
-  ];
-
-  // Mock data for testing
-  const mockData = {
-    election: {
-      id: 1,
-      name: "Supreme Student Council Mock Elections 2025",
-      status: "ongoing",
-    },
-    results: [
-      {
-        position_id: 1,
-        position_name: "SSC President",
-        candidates: [
-          {
-            candidate_id: 1,
-            name: "Rohit Dubb",
-            votes: 225,
-            partylist: "Komy Party",
-            profile_photo: null,
-          },
-          {
-            candidate_id: 2,
-            name: "Ayron D. Cagara",
-            votes: 150,
-            partylist: "Team A PartyList",
-            profile_photo: null,
-          },
-        ],
-        winners: [{ candidate_id: 1 }],
-      },
-      {
-        position_id: 2,
-        position_name: "SSC VP Internal",
-        candidates: [
-          {
-            candidate_id: 3,
-            name: "Jaswin Glent H. Pineda",
-            votes: 195,
-            partylist: "B Team",
-            profile_photo: null,
-          },
-          {
-            candidate_id: 4,
-            name: "Maria Santos",
-            votes: 180,
-            partylist: "Komy Party",
-            profile_photo: null,
-          },
-        ],
-        winners: [{ candidate_id: 3 }],
-      },
-    ],
-  };
-
-  // Function to use mock data
-  const useMockDataForTesting = () => {
-    setElections(mockElections);
-    setSelectedElectionId(1);
-    setElectionData(mockData);
-    setError(null);
-    setLoading(false);
-    setDebugMode(true);
   };
 
   // Function to fetch election results
@@ -336,28 +257,20 @@ const Dashboard = () => {
 
   // Effect to fetch elections on mount
   useEffect(() => {
-    if (!debugMode) {
-      const fetchData = async () => {
-        try {
-          await fetchElections();
-        } catch (err) {
-          console.error("Could not fetch elections:", err);
+    const fetchData = async () => {
+      try {
+        await fetchElections();
+      } catch (err) {
+        console.error("Could not fetch elections:", err);
+      }
+    };
 
-          // In development mode, automatically use mock data after failure
-          if (process.env.NODE_ENV !== "production") {
-            console.log("Using mock data automatically in development mode");
-            useMockDataForTesting();
-          }
-        }
-      };
-
-      fetchData();
-    }
-  }, [debugMode]);
+    fetchData();
+  }, []);
 
   // Effect to fetch election results when election changes
   useEffect(() => {
-    if (selectedElectionId && !debugMode) {
+    if (selectedElectionId) {
       fetchElectionResults();
 
       // Set up polling for live updates - every 30 seconds
@@ -366,7 +279,7 @@ const Dashboard = () => {
         clearInterval(interval);
       };
     }
-  }, [selectedElectionId, debugMode]);
+  }, [selectedElectionId]);
 
   // Function to filter positions
   const getFilteredPositions = () => {
@@ -443,7 +356,7 @@ const Dashboard = () => {
     if (!position || !position.candidates) {
       return (
         <div className="bg-white p-6 rounded-xl shadow-sm h-full border border-gray-100">
-          <h2 className="text-[#4B3B7C] text-xl font-medium">
+          <h2 className="text-[#4B3B7C] text-xl font-climate">
             {position?.position_name || "Unknown Position"}
           </h2>
           <Empty description="No candidate data available" />
@@ -465,7 +378,7 @@ const Dashboard = () => {
     return (
       <div className="bg-white p-5 rounded-lg shadow-sm h-full border border-gray-100">
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-[#4B3B7C] text-lg font-medium">
+          <h2 className="text-[#4B3B7C] text-lg font-climate">
             {position.position_name}
           </h2>
           <Radio.Group
@@ -510,6 +423,29 @@ const Dashboard = () => {
                               : 0;
                           return `${label}: ${value} votes (${percentage}%)`;
                         },
+                      },
+                    },
+                    // Add datalabels plugin configuration
+                    datalabels: {
+                      formatter: (value, ctx) => {
+                        const percentage =
+                          totalVotes > 0
+                            ? Math.round((value / totalVotes) * 100)
+                            : 0;
+                        return percentage > 5 ? `${percentage}%` : "";
+                      },
+                      color: "#fff",
+                      font: {
+                        weight: "bold",
+                        size: 12,
+                      },
+                      textAlign: "center",
+                      textStrokeColor: "rgba(0,0,0,0.2)",
+                      textStrokeWidth: 1,
+                      // Only show labels for segments that are large enough
+                      display: function (context) {
+                        const value = context.dataset.data[context.dataIndex];
+                        return value > 5 && (value / totalVotes) * 100 > 5;
                       },
                     },
                   },
@@ -638,7 +574,7 @@ const Dashboard = () => {
     return (
       <div className="flex flex-col w-full">
         <div className="bg-gray-100 px-8 py-8 -mx-8 -mt-8 mb-8">
-          <h1 className="text-[#4B3B7C] text-4xl font-medium text-center">
+          <h1 className="text-[#4B3B7C] text-4xl font-climate text-center">
             ELECTION RESULTS
           </h1>
         </div>
@@ -660,146 +596,7 @@ const Dashboard = () => {
           }
           type="info"
           showIcon
-          action={
-            <Button size="small" onClick={useMockDataForTesting}>
-              Use Demo Data
-            </Button>
-          }
         />
-
-        {/* For debugging */}
-        {process.env.NODE_ENV !== "production" && (
-          <div className="mt-8">
-            <h2 className="text-lg font-medium mb-2">Debug Information</h2>
-
-            <div className="mb-4">
-              <Button
-                size="small"
-                onClick={() => setShowApiUrlInput(!showApiUrlInput)}
-                type={showApiUrlInput ? "primary" : "default"}
-              >
-                {showApiUrlInput
-                  ? "Hide API URL Input"
-                  : "Specify API URL Directly"}
-              </Button>
-
-              {showApiUrlInput && (
-                <div className="mt-2 flex gap-2">
-                  <input
-                    type="text"
-                    value={directApiUrl}
-                    onChange={(e) => setDirectApiUrl(e.target.value)}
-                    placeholder="Enter API URL (e.g., http://localhost:8000/api/elections)"
-                    className="border p-2 rounded flex-1"
-                  />
-                  <Button
-                    onClick={async () => {
-                      if (!directApiUrl) return;
-
-                      try {
-                        setLoadingElections(true);
-                        const response = await axios.get(directApiUrl, {
-                          headers: {
-                            Accept: "application/json",
-                            "Content-Type": "application/json",
-                          },
-                        });
-
-                        console.log("Direct API response:", response.data);
-
-                        if (response.data) {
-                          // If it's a single election's results
-                          if (response.data.election && response.data.results) {
-                            setElectionData(response.data);
-                            setElections([
-                              {
-                                id: response.data.election.id,
-                                name: response.data.election.name,
-                                status: response.data.election.status,
-                              },
-                            ]);
-                            setSelectedElectionId(response.data.election.id);
-                          }
-                          // If it's a list of elections
-                          else if (
-                            Array.isArray(response.data) ||
-                            response.data.elections ||
-                            response.data.active_elections
-                          ) {
-                            let electionsArray = [];
-
-                            if (Array.isArray(response.data)) {
-                              electionsArray = response.data;
-                            } else if (
-                              response.data.elections &&
-                              Array.isArray(response.data.elections)
-                            ) {
-                              electionsArray = response.data.elections;
-                            } else if (
-                              response.data.active_elections &&
-                              Array.isArray(response.data.active_elections)
-                            ) {
-                              electionsArray = response.data.active_elections;
-                            }
-
-                            if (electionsArray.length > 0) {
-                              const formattedElections = electionsArray.map(
-                                (election) => ({
-                                  id: election.id,
-                                  name:
-                                    election.election_name ||
-                                    election.name ||
-                                    "Unnamed Election",
-                                  status: election.status || "active",
-                                })
-                              );
-
-                              setElections(formattedElections);
-                              if (formattedElections.length > 0) {
-                                setSelectedElectionId(formattedElections[0].id);
-                              }
-                            }
-                          } else {
-                            alert(
-                              "The API returned data, but not in the expected format"
-                            );
-                          }
-                        }
-                      } catch (err) {
-                        console.error("Error fetching from direct URL:", err);
-                        alert("Failed to fetch data from the provided URL");
-                      } finally {
-                        setLoadingElections(false);
-                      }
-                    }}
-                  >
-                    Fetch
-                  </Button>
-                </div>
-              )}
-            </div>
-
-            <div
-              className="bg-gray-900 text-white p-4 rounded overflow-auto"
-              style={{ maxHeight: "400px" }}
-            >
-              <pre>
-                {JSON.stringify(
-                  {
-                    state: {
-                      elections,
-                      selectedElectionId,
-                      loadingElections,
-                      error,
-                    },
-                  },
-                  null,
-                  2
-                )}
-              </pre>
-            </div>
-          </div>
-        )}
       </div>
     );
   }
@@ -817,7 +614,7 @@ const Dashboard = () => {
     return (
       <div className="flex flex-col w-full">
         <div className="bg-gray-100 px-8 py-8 -mx-8 -mt-8 mb-8">
-          <h1 className="text-[#4B3B7C] text-4xl font-medium text-center">
+          <h1 className="text-[#4B3B7C] text-4xl font-climate text-center">
             ELECTION RESULTS
           </h1>
 
@@ -844,19 +641,9 @@ const Dashboard = () => {
           type="error"
           showIcon
           action={
-            <div className="mt-2">
-              <Button
-                size="small"
-                type="primary"
-                onClick={fetchElectionResults}
-                style={{ marginRight: 8 }}
-              >
-                Retry
-              </Button>
-              <Button size="small" onClick={useMockDataForTesting}>
-                Use Demo Data
-              </Button>
-            </div>
+            <Button size="small" type="primary" onClick={fetchElectionResults}>
+              Retry
+            </Button>
           }
         />
       </div>
@@ -868,11 +655,8 @@ const Dashboard = () => {
   return (
     <div className="flex flex-col w-full">
       <div className="bg-gray-100 px-8 py-8 -mx-8 -mt-8 mb-8">
-        <h1 className="text-[#4B3B7C] text-4xl font-medium text-center">
+        <h1 className="text-[#4B3B7C] text-4xl font-climate text-center">
           ELECTION RESULTS
-          {debugMode && (
-            <span className="text-xs text-red-500 ml-2">(Demo Mode)</span>
-          )}
         </h1>
 
         {/* Election selector */}
@@ -912,7 +696,7 @@ const Dashboard = () => {
 
         <Row gutter={16} className="mt-6 mb-4">
           <Col span={24} md={8}>
-            <Card bodyStyle={{ padding: "16px" }}>
+            <Card styles={{ body: { padding: "16px" } }}>
               <Statistic
                 title="Total Positions"
                 value={electionData?.results?.length || 0}
@@ -922,7 +706,7 @@ const Dashboard = () => {
             </Card>
           </Col>
           <Col span={24} md={8}>
-            <Card bodyStyle={{ padding: "16px" }}>
+            <Card styles={{ body: { padding: "16px" } }}>
               <Statistic
                 title="Total Candidates"
                 value={
@@ -933,7 +717,7 @@ const Dashboard = () => {
                 }
                 valueStyle={{ color: PRIMARY_COLOR }}
                 prefix={
-                  <Avatar.Group maxCount={2} size="small">
+                  <Avatar.Group max={{ count: 2 }} size="small">
                     <Avatar
                       size="small"
                       style={{ backgroundColor: WINNER_COLOR }}
@@ -952,7 +736,7 @@ const Dashboard = () => {
             </Card>
           </Col>
           <Col span={24} md={8}>
-            <Card bodyStyle={{ padding: "16px" }}>
+            <Card styles={{ body: { padding: "16px" } }}>
               <Statistic
                 title="Total Votes Cast"
                 value={
@@ -990,30 +774,12 @@ const Dashboard = () => {
 
             <Button
               icon={<ReloadOutlined />}
-              onClick={debugMode ? useMockDataForTesting : fetchElectionResults}
-              loading={loading && !debugMode}
+              onClick={fetchElectionResults}
+              loading={loading}
               type="default"
             >
               Refresh
             </Button>
-
-            {/* Add debug mode toggle for development */}
-            {process.env.NODE_ENV !== "production" && (
-              <Button
-                type={debugMode ? "primary" : "default"}
-                danger={debugMode}
-                onClick={() => {
-                  if (debugMode) {
-                    setDebugMode(false);
-                    fetchElections();
-                  } else {
-                    useMockDataForTesting();
-                  }
-                }}
-              >
-                {debugMode ? "Exit Demo Mode" : "Use Demo Data"}
-              </Button>
-            )}
           </div>
 
           <Radio.Group

@@ -26,6 +26,19 @@ const ElectionDetails = () => {
   const loadingTimeoutRef = useRef(null);
   const { user, token } = useAuthContext();
 
+  // Updated function to handle profile photos consistently
+  const formatProfilePhotoUrl = (photoPath) => {
+    if (!photoPath) return null;
+
+    // If it's already a full URL, return it as is
+    if (photoPath.startsWith("http")) {
+      return photoPath;
+    }
+
+    // Otherwise, prepend the storage path
+    return `http://127.0.0.1:8000/storage/${photoPath}`;
+  };
+
   // Helper function to format date safely
   const formatDate = (dateString) => {
     if (!dateString) return "Not set";
@@ -125,7 +138,8 @@ const ElectionDetails = () => {
                 positionsMap[positionId].candidates.push({
                   id: candidate.id,
                   name: candidate.user?.name || "Unknown",
-                  profile_photo: candidate.profile_photo || null,
+                  profile_photo: formatProfilePhotoUrl(candidate.profile_photo),
+                  partylist: candidate.partylist || "Independent",
                 });
               }
             });

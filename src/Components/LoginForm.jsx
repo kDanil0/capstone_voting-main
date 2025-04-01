@@ -274,7 +274,7 @@ const LoginForm = () => {
             One Time Password
           </label>
           <input
-            type="text"
+            type="password"
             id="tokenOTP"
             name="tokenOTP"
             value={formData.tokenOTP}
