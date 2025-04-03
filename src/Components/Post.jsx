@@ -1,14 +1,22 @@
 import React, { useState, useRef, useEffect, useCallback } from "react";
 // Add Material UI Icons import
-import { PhotoCamera, Videocam, Close } from "@mui/icons-material";
+import {
+  PhotoCamera,
+  Videocam,
+  Close,
+  DeleteOutline,
+} from "@mui/icons-material";
 import { useAuthContext } from "../utils/AuthContext";
+import { Link } from "react-router-dom"; // Add Link import
 import {
   createPost,
   getApprovedPosts,
   getApprovedPostsByCandidate,
   getStorageUrl,
+  deletePost,
   BASE_URL,
 } from "../utils/api";
+import { Modal, message, Image } from "antd";
 
 /**
  * Post component that displays posts with optional filtering by candidate
@@ -48,6 +56,10 @@ const Post = ({ readOnly: forcedReadOnly = false, candidateId = null }) => {
   const fileInputRef = useRef(null);
   const observerRef = useRef(null);
   const postsContainerRef = useRef(null);
+
+  const [deleteModalVisible, setDeleteModalVisible] = useState(false);
+  const [postToDelete, setPostToDelete] = useState(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // ===== DATA FETCHING =====
   /**
@@ -326,11 +338,53 @@ const Post = ({ readOnly: forcedReadOnly = false, candidateId = null }) => {
     return `${baseUrl}/storage/${cleanPath}`;
   };
 
+  // Handle post deletion
+  const handleDeletePost = async (post) => {
+    setPostToDelete(post);
+    setDeleteModalVisible(true);
+  };
+
+  // Confirm post deletion
+  const confirmDelete = async () => {
+    if (!postToDelete) return;
+
+    setIsDeleting(true);
+    try {
+      const response = await deletePost(token, postToDelete.id);
+
+      if (response.success) {
+        message.success(response.message);
+        // Remove the deleted post from the posts array
+        setPosts(posts.filter((p) => p.id !== postToDelete.id));
+      } else {
+        // Handle specific error cases
+        if (response.status === 401) {
+          message.error("Your session has expired. Please log in again.");
+        } else if (response.status === 403) {
+          message.error("You don't have permission to delete this post.");
+        } else if (response.status === 404) {
+          message.error("Post not found. It may have been already deleted.");
+          // Remove the post from UI if it doesn't exist in backend
+          setPosts(posts.filter((p) => p.id !== postToDelete.id));
+        } else {
+          message.error(response.message || "Failed to delete post");
+        }
+      }
+    } catch (error) {
+      console.error("Error deleting post:", error);
+      message.error("An error occurred while deleting the post");
+    } finally {
+      setIsDeleting(false);
+      setDeleteModalVisible(false);
+      setPostToDelete(null);
+    }
+  };
+
   return (
     <div className="flex flex-col h-full w-full -mt-8 pt-4">
       {/* Main Content */}
       <div className="flex-grow overflow-y-auto" ref={postsContainerRef}>
-        <div className="max-w-4xl mx-auto px-4 py-4">
+        <div className="max-w-5xl mx-auto px-4 py-4">
           {/* Authentication Message for non-authenticated users */}
           {!token && !forcedReadOnly && (
             <div className="bg-blue-50 border border-blue-300 text-blue-800 px-4 py-3 rounded mb-4">
@@ -547,46 +601,97 @@ const Post = ({ readOnly: forcedReadOnly = false, candidateId = null }) => {
                 const postContent = post.content || "";
                 const postImage = post.image || null;
                 const createdAt = post.created_at || "";
+                const candidateId = candidateInfo.id || null;
 
                 return (
                   <div
                     key={post.id || index}
-                    className="bg-white rounded-lg shadow-sm p-6"
+                    className="bg-white rounded-lg shadow-sm p-6 w-full"
                     ref={isLastPost ? lastPostElementRef : null}
                   >
-                    <div className="flex items-start gap-3 mb-4">
-                      <div className="w-12 h-12 bg-gray-300 rounded-full flex-shrink-0">
-                        {profilePhoto && (
-                          <img
-                            src={`${
-                              profilePhoto.startsWith("http")
-                                ? ""
-                                : "http://127.0.0.1:8000/storage/"
-                            }${profilePhoto}`}
-                            alt={candidateName}
-                            className="w-12 h-12 rounded-full object-cover"
-                          />
+                    <div className="flex items-start justify-between gap-3 mb-4">
+                      <div className="flex items-start gap-3">
+                        {/* Profile photo - Clickable if candidate exists */}
+                        {candidateId ? (
+                          <Link
+                            to={`/candidates/view/${candidateId}`}
+                            className="w-12 h-12 bg-gray-300 rounded-full flex-shrink-0 overflow-hidden hover:opacity-90 transition-opacity"
+                          >
+                            {profilePhoto ? (
+                              <img
+                                src={`${
+                                  profilePhoto.startsWith("http")
+                                    ? ""
+                                    : "http://127.0.0.1:8000/storage/"
+                                }${profilePhoto}`}
+                                alt={candidateName}
+                                className="w-12 h-12 rounded-full object-cover"
+                              />
+                            ) : (
+                              <div className="w-12 h-12 flex items-center justify-center bg-[#3F4B8C] text-white font-bold">
+                                {candidateName.charAt(0)}
+                              </div>
+                            )}
+                          </Link>
+                        ) : (
+                          <div className="w-12 h-12 bg-gray-300 rounded-full flex-shrink-0">
+                            {profilePhoto && (
+                              <img
+                                src={`${
+                                  profilePhoto.startsWith("http")
+                                    ? ""
+                                    : "http://127.0.0.1:8000/storage/"
+                                }${profilePhoto}`}
+                                alt={candidateName}
+                                className="w-12 h-12 rounded-full object-cover"
+                              />
+                            )}
+                          </div>
                         )}
-                      </div>
-                      <div>
-                        <h3 className="font-semibold text-lg">
-                          {candidateName}
-                        </h3>
-                        <div className="flex flex-wrap items-center gap-2 text-sm">
-                          <span className="text-[#2F3875]">
-                            {positionName && `Candidate, ${positionName}`}
-                            {partylistName && ` - ${partylistName}`}
-                          </span>
-                          {departmentName && (
-                            <span className="text-gray-600">
-                              {departmentName}
-                            </span>
+
+                        <div>
+                          {/* Candidate name - Clickable if candidate exists */}
+                          {candidateId ? (
+                            <Link
+                              to={`/candidates/view/${candidateId}`}
+                              className="font-semibold text-lg text-[#2F3875] hover:underline"
+                            >
+                              {candidateName}
+                            </Link>
+                          ) : (
+                            <h3 className="font-semibold text-lg">
+                              {candidateName}
+                            </h3>
                           )}
-                          <span className="text-gray-500">
-                            {formatTimeAgo(createdAt)}
-                          </span>
+                          <div className="flex flex-wrap items-center gap-2 text-sm">
+                            <span className="text-[#2F3875]">
+                              {positionName && `Candidate, ${positionName}`}
+                              {partylistName && ` - ${partylistName}`}
+                            </span>
+                            {departmentName && (
+                              <span className="text-gray-600">
+                                {departmentName}
+                              </span>
+                            )}
+                            <span className="text-gray-500">
+                              {formatTimeAgo(createdAt)}
+                            </span>
+                          </div>
                         </div>
                       </div>
+
+                      {/* Delete button - Show for post owner */}
+                      {user &&
+                        user.role_id === 2 &&
+                        user.id === post?.candidate?.user?.id && (
+                          <button
+                            onClick={() => handleDeletePost(post)}
+                            className="text-red-500 hover:text-red-700 p-2 rounded-full hover:bg-red-50 transition-colors"
+                            title="Delete post"
+                          >
+                            <DeleteOutline />
+                          </button>
+                        )}
                     </div>
 
                     <div className="ml-[60px]">
@@ -597,17 +702,25 @@ const Post = ({ readOnly: forcedReadOnly = false, candidateId = null }) => {
                         {postContent}
                       </p>
 
-                      {/* Display post image if available */}
+                      {/* Display post image if available - Using Ant Design Image for preview */}
                       {postImage && (
                         <div className="mt-4">
-                          <img
+                          <Image
                             src={`${
                               postImage.startsWith("http")
                                 ? ""
                                 : "http://127.0.0.1:8000/storage/"
                             }${postImage}`}
                             alt={postTitle}
-                            className="max-h-96 rounded-lg object-contain"
+                            className="max-h-96 rounded-lg object-contain cursor-pointer"
+                            preview={{
+                              maskClassName: "rounded-lg",
+                              mask: (
+                                <div className="absolute inset-0 bg-black bg-opacity-10 hover:bg-opacity-20 flex items-center justify-center text-white">
+                                  Click to preview
+                                </div>
+                              ),
+                            }}
                           />
                         </div>
                       )}
@@ -636,6 +749,28 @@ const Post = ({ readOnly: forcedReadOnly = false, candidateId = null }) => {
           )}
         </div>
       </div>
+
+      {/* Delete Confirmation Modal */}
+      <Modal
+        title="Delete Post"
+        open={deleteModalVisible}
+        onCancel={() => {
+          setDeleteModalVisible(false);
+          setPostToDelete(null);
+        }}
+        onOk={confirmDelete}
+        okText="Delete"
+        cancelText="Cancel"
+        okButtonProps={{
+          danger: true,
+          loading: isDeleting,
+        }}
+      >
+        <p>
+          Are you sure you want to delete this post? This action cannot be
+          undone.
+        </p>
+      </Modal>
     </div>
   );
 };

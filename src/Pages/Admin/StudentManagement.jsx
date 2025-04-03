@@ -154,36 +154,22 @@ const StudentManagement = () => {
   const handleGenerateToken = async (studentId) => {
     try {
       const response = await generateStudentToken(token, studentId);
+
+      // Only refresh the students list if successful, but don't show messages
       if (response.success) {
-        // Get the token result for this specific student
-        const studentResult = response.results[studentId];
-
-        if (
-          studentResult &&
-          typeof studentResult === "object" &&
-          studentResult.tokenOTP
-        ) {
-          // Display token info in the success message
-          message.success(
-            `Token generated successfully: ${
-              studentResult.tokenOTP
-            } (expires at ${new Date(
-              studentResult.expires_at
-            ).toLocaleString()})`
-          );
-        } else {
-          // Fall back to generic message if token details aren't available
-          message.success(response.message);
-        }
-
         // Refresh the students list
         fetchStudents(pagination.current, searchQuery);
-      } else {
-        message.error(response.message);
       }
+
+      // Return the response to be handled by the child component
+      return response;
     } catch (error) {
       console.error("Error generating token:", error);
-      message.error("Failed to generate token");
+      return {
+        success: false,
+        message: "Failed to generate token",
+        error: error.message,
+      };
     }
   };
 

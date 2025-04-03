@@ -1283,6 +1283,62 @@ export const approvePost = async (token, postId) => {
   }
 };
 
+// Function to reject a candidate's post
+export const rejectPost = async (token, postId) => {
+  try {
+    const response = await axiosInstance.put(`/api/admin/posts/${postId}/reject`, {}, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      }
+    });
+    
+    // The backend now completely deletes the post, so we don't expect a post in the response
+    return {
+      success: true,
+      message: response.data.message || 'Post rejected and deleted successfully'
+    };
+  } catch (error) {
+    console.error("Error rejecting post:", error);
+    
+    // Return structured error response
+    if (error.response && error.response.data) {
+      // Handle specific error cases
+      if (error.response.status === 401) {
+        return {
+          success: false,
+          message: 'Unauthorized: Please log in again',
+          status: 401
+        };
+      } else if (error.response.status === 403) {
+        return {
+          success: false,
+          message: 'Unauthorized: Only admins can reject posts',
+          status: 403
+        };
+      } else if (error.response.status === 404) {
+        return {
+          success: false,
+          message: 'Post not found',
+          status: 404
+        };
+      }
+      
+      return {
+        success: false,
+        message: error.response.data.message || 'Failed to reject post',
+        status: error.response.status
+      };
+    }
+    
+    // Generic error
+    return {
+      success: false,
+      message: error.message || 'Network error while rejecting post'
+    };
+  }
+};
+
 // Function to get all posts (admin only)
 export const getAllPostsAdmin = async (token, page = 1, perPage = 10) => {
   try {
@@ -1474,6 +1530,113 @@ export const getElectionTurnout = async (token, electionId) => {
     return {
       success: false,
       message: error.response?.data?.message || 'Failed to fetch election turnout'
+    };
+  }
+};
+
+// Function to reset admin password
+export const resetPassword = async (token, newPassword) => {
+  try {
+    const response = await axiosInstance.post('/api/admin/reset-password', 
+      { new_password: newPassword },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        }
+      }
+    );
+    
+    return {
+      success: true,
+      message: response.data.message || 'Password successfully updated'
+    };
+  } catch (error) {
+    console.error("Error resetting password:", error);
+    
+    // Return structured error response
+    if (error.response && error.response.data) {
+      // Handle specific error cases
+      if (error.response.status === 401) {
+        return {
+          success: false,
+          message: 'Unauthorized: Please log in again',
+          status: 401
+        };
+      } else if (error.response.status === 403) {
+        return {
+          success: false,
+          message: 'Unauthorized: Only admins can reset their password',
+          status: 403
+        };
+      }
+      
+      return {
+        success: false,
+        message: error.response.data.message || 'Failed to reset password',
+        status: error.response.status
+      };
+    }
+    
+    // Generic error
+    return {
+      success: false,
+      message: error.message || 'Network error while resetting password'
+    };
+  }
+};
+
+// Function to delete a candidate's post
+export const deletePost = async (token, postId) => {
+  try {
+    const response = await axiosInstance.delete(`/api/candidates/posts/delete/${postId}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      }
+    });
+    
+    return {
+      success: true,
+      message: response.data.message || 'Post deleted successfully'
+    };
+  } catch (error) {
+    console.error("Error deleting post:", error);
+    
+    // Return structured error response
+    if (error.response && error.response.data) {
+      // Handle specific error cases
+      if (error.response.status === 401) {
+        return {
+          success: false,
+          message: 'Unauthorized: Please log in again',
+          status: 401
+        };
+      } else if (error.response.status === 403) {
+        return {
+          success: false,
+          message: 'Forbidden: Not your post',
+          status: 403
+        };
+      } else if (error.response.status === 404) {
+        return {
+          success: false,
+          message: 'Post not found',
+          status: 404
+        };
+      }
+      
+      return {
+        success: false,
+        message: error.response.data.message || 'Failed to delete post',
+        status: error.response.status
+      };
+    }
+    
+    // Generic error
+    return {
+      success: false,
+      message: error.message || 'Network error while deleting post'
     };
   }
 };

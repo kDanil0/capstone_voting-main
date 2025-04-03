@@ -24,6 +24,7 @@ import {
   getAllStudents,
   getAllElections,
   getAllCandidates,
+  resetPassword,
 } from "../utils/api";
 import { useAuthContext } from "../utils/AuthContext";
 
@@ -157,13 +158,25 @@ const AdminDashboard = () => {
   const handleResetPassword = async (values) => {
     setResetLoading(true);
     try {
-      // This will be replaced with actual API call
-      console.log("Password reset request:", values);
-      message.success("Password reset successful");
-      setResetPasswordModal(false);
-      resetPasswordForm.resetFields();
+      const response = await resetPassword(token, values.newPassword);
+
+      if (response.success) {
+        message.success(response.message);
+        setResetPasswordModal(false);
+        resetPasswordForm.resetFields();
+      } else {
+        // Handle specific error cases
+        if (response.status === 401) {
+          message.error("Your session has expired. Please log in again.");
+        } else if (response.status === 403) {
+          message.error("You don't have permission to reset passwords.");
+        } else {
+          message.error(response.message || "Failed to reset password");
+        }
+      }
     } catch (error) {
-      message.error("Failed to reset password");
+      console.error("Error in password reset:", error);
+      message.error("An unexpected error occurred while resetting password");
     } finally {
       setResetLoading(false);
     }
@@ -308,9 +321,12 @@ const AdminDashboard = () => {
 
       {/* Reset Password Modal */}
       <Modal
-        title="Reset User Password"
+        title="Reset Admin Password"
         open={resetPasswordModal}
-        onCancel={() => setResetPasswordModal(false)}
+        onCancel={() => {
+          setResetPasswordModal(false);
+          resetPasswordForm.resetFields();
+        }}
         footer={null}
       >
         <Form
@@ -318,16 +334,6 @@ const AdminDashboard = () => {
           layout="vertical"
           onFinish={handleResetPassword}
         >
-          <Form.Item
-            name="email"
-            label="User Email"
-            rules={[
-              { required: true, message: "Please enter the user email" },
-              { type: "email", message: "Please enter a valid email" },
-            ]}
-          >
-            <Input prefix={<UserOutlined />} placeholder="Email" />
-          </Form.Item>
           <Form.Item
             name="newPassword"
             label="New Password"
@@ -365,7 +371,14 @@ const AdminDashboard = () => {
             />
           </Form.Item>
           <div className="flex justify-end gap-2">
-            <Button onClick={() => setResetPasswordModal(false)}>Cancel</Button>
+            <Button
+              onClick={() => {
+                setResetPasswordModal(false);
+                resetPasswordForm.resetFields();
+              }}
+            >
+              Cancel
+            </Button>
             <Button
               type="primary"
               htmlType="submit"

@@ -25,7 +25,12 @@ import {
   ReloadOutlined,
 } from "@ant-design/icons";
 import { useAuthContext } from "../../utils/AuthContext";
-import { approvePost, getStorageUrl, getAllPostsAdmin } from "../../utils/api";
+import {
+  approvePost,
+  rejectPost,
+  getStorageUrl,
+  getAllPostsAdmin,
+} from "../../utils/api";
 import DashboardHeader from "../../components/admin/DashboardHeader";
 
 const { Title, Text, Paragraph } = Typography;
@@ -131,6 +136,48 @@ const PostApproval = () => {
     } catch (error) {
       console.error("Error approving post:", error);
       message.error("An error occurred while approving the post");
+    }
+  };
+
+  const handleReject = async (postId) => {
+    try {
+      const response = await rejectPost(token, postId);
+
+      if (response.success) {
+        message.success(
+          response.message || "Post rejected and deleted successfully"
+        );
+
+        // Remove the post from both allPosts and current posts arrays since it's deleted
+        const updatedAllPosts = allPosts.filter((post) => post.id !== postId);
+        setAllPosts(updatedAllPosts);
+        setPosts(posts.filter((post) => post.id !== postId));
+
+        // Update counts
+        if (activeTab === "approved") {
+          setApprovedCount((prevCount) => Math.max(0, prevCount - 1));
+        } else {
+          setPendingCount((prevCount) => Math.max(0, prevCount - 1));
+        }
+      } else {
+        // Handle specific error cases
+        if (response.status === 401) {
+          message.error("Your session has expired. Please log in again.");
+        } else if (response.status === 403) {
+          message.error("You don't have permission to reject posts.");
+        } else if (response.status === 404) {
+          message.error("Post not found. It may have been already deleted.");
+          // Remove the post from the UI if it doesn't exist in the backend
+          const updatedAllPosts = allPosts.filter((post) => post.id !== postId);
+          setAllPosts(updatedAllPosts);
+          setPosts(posts.filter((post) => post.id !== postId));
+        } else {
+          message.error(response.message || "Failed to reject post");
+        }
+      }
+    } catch (error) {
+      console.error("Error rejecting post:", error);
+      message.error("An error occurred while rejecting the post");
     }
   };
 
@@ -316,9 +363,7 @@ const PostApproval = () => {
                       type="primary"
                       danger
                       icon={<CloseCircleOutlined />}
-                      onClick={() =>
-                        message.info("Reject functionality not implemented yet")
-                      }
+                      onClick={() => handleReject(post.id)}
                     >
                       Reject
                     </Button>
@@ -355,18 +400,56 @@ const PostApproval = () => {
         open={imageModalVisible}
         footer={null}
         onCancel={() => setImageModalVisible(false)}
-        width="80%"
+        width="fit-content"
         centered
+        className="post-image-modal"
       >
-        <Image
-          src={selectedImage}
-          alt="Full size post image"
-          style={{ width: "100%" }}
-          preview={false}
-        />
+        <div className="flex justify-center items-center">
+          <Image
+            src={selectedImage}
+            alt="Full size post image"
+            style={{
+              maxWidth: "90vw",
+              maxHeight: "85vh",
+              width: "auto",
+              height: "auto",
+              objectFit: "contain",
+            }}
+            preview={false}
+          />
+        </div>
       </Modal>
     </div>
   );
 };
+
+// Add styles at the end of the file
+const styles = `
+  .post-image-modal .ant-modal-content {
+    background: rgba(0, 0, 0, 0.85);
+    padding: 16px;
+    display: inline-block;
+  }
+  .post-image-modal .ant-modal-body {
+    padding: 0;
+    line-height: 0;
+  }
+  .post-image-modal .ant-modal-close {
+    color: white;
+  }
+  .post-image-modal .ant-modal-close:hover {
+    color: #f0f0f0;
+  }
+  .post-image-modal {
+    text-align: center;
+  }
+`;
+
+// Inject styles
+if (typeof document !== "undefined") {
+  const styleElement = document.createElement("style");
+  styleElement.innerHTML = styles;
+  document.head.appendChild(styleElement);
+}
 
 export default PostApproval;

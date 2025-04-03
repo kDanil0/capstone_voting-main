@@ -24,6 +24,7 @@ import VotingProcess from "./Pages/Voters/VotingProcess";
 import Candidates from "./Pages/Candidate/Candidates";
 import UserCandidates from "./Pages/Candidate/UserCandidates";
 import CandidateProfilePage from "./Pages/Candidate/CandidateProfilePage";
+import CandidateView from "./Pages/Candidate/CandidateView";
 import CandidateProfile from "./Components/Candidate/CandidateProfile";
 import CandidateProfileView from "./Components/Candidate/CandidateProfileView";
 import CandidatePost from "./Pages/Candidate/CandidatePost";
@@ -103,6 +104,7 @@ const AppContent = () => {
         <Route path="/login" element={<Login />} />
         <Route path="/posts" element={<Posts />} />
         <Route path="/view-candidates/:id" element={<CandidateProfileView />} />
+        <Route path="/candidates/view/:id" element={<CandidateView />} />
 
         {/* Protected Voter Routes */}
         <Route

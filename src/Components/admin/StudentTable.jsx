@@ -8,6 +8,7 @@ import {
   Tag,
   Tooltip,
   Modal,
+  message,
 } from "antd";
 import { SearchOutlined, ExclamationCircleOutlined } from "@ant-design/icons";
 
@@ -25,11 +26,75 @@ const StudentTable = ({
   departments,
 }) => {
   const [searchText, setSearchText] = useState("");
+  const [generatingTokenFor, setGeneratingTokenFor] = useState(null);
 
   const handleSearch = (e) => {
     const value = e.target.value;
     setSearchText(value);
     onSearch && onSearch(value);
+  };
+
+  const handleGenerateToken = async (studentId) => {
+    setGeneratingTokenFor(studentId);
+    try {
+      const response = await onGenerateToken(studentId);
+
+      // Check if there's an error in the results for this student
+      const studentResult = response?.results?.[studentId];
+
+      if (!studentResult) {
+        message.error({
+          content: "Failed to generate token: No response from server",
+          duration: 4,
+        });
+        return;
+      }
+
+      if (studentResult.status === "error") {
+        // Show error message with timeout information if available
+        message.error({
+          content: studentResult.error || "Failed to generate token",
+          duration: 6,
+        });
+        return;
+      }
+
+      // If we reach here, it's a success case
+      if (studentResult.status === "success") {
+        let successMessage = `Token generated successfully`;
+
+        if (studentResult.attempts_remaining !== undefined) {
+          successMessage += `. ${studentResult.attempts_remaining} attempts remaining`;
+        }
+
+        if (!studentResult.email_sent && studentResult.email_error) {
+          // Email failure case
+          message.warning({
+            content: `${successMessage}, but email could not be sent. Please try again or contact support.`,
+            duration: 6,
+          });
+        } else {
+          // Complete success case
+          message.success({
+            content: `${successMessage} and sent to user's email.`,
+            duration: 4,
+          });
+        }
+      } else {
+        // Handle any other cases
+        message.info({
+          content: response.message || "Operation completed",
+          duration: 4,
+        });
+      }
+    } catch (error) {
+      message.error({
+        content: error.message || "Failed to generate token",
+        duration: 4,
+      });
+    } finally {
+      setGeneratingTokenFor(null);
+    }
   };
 
   const showDeleteConfirm = (studentId) => {
@@ -159,16 +224,19 @@ const StudentTable = ({
               height: "36px",
               fontSize: "14px",
             }}
-            onClick={() => onGenerateToken(record.id)}
+            onClick={() => handleGenerateToken(record.id)}
             onMouseOver={(e) => {
               e.currentTarget.style.backgroundColor = "#2c3470";
             }}
             onMouseOut={(e) => {
               e.currentTarget.style.backgroundColor = "#38438c";
             }}
+            loading={generatingTokenFor === record.id}
             disabled={loading}
           >
-            Generate Token
+            {generatingTokenFor === record.id
+              ? "Generating..."
+              : "Generate Token"}
           </Button>
           <Button
             type="primary"

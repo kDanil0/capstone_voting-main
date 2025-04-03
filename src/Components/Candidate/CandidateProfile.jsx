@@ -23,13 +23,6 @@ const CandidateProfile = ({ candidateData, onBioUpdate, onPhotoUpload }) => {
   const [imageError, setImageError] = useState(false);
 
   /**
-   * Navigate to documents page
-   */
-  const handleDocumentClick = () => {
-    navigate("/document");
-  };
-
-  /**
    * Handle file selection for profile image upload
    * @param {Event} e The file input change event
    */
@@ -112,9 +105,9 @@ const CandidateProfile = ({ candidateData, onBioUpdate, onPhotoUpload }) => {
 
   return (
     <div className="h-full max-w-[1200px] mx-auto pt-6 px-4">
-      <div className="flex gap-6">
+      <div className="flex justify-center">
         {/* Main Content Column */}
-        <div className="flex-grow max-w-[800px]">
+        <div className="w-full max-w-[800px]">
           {/* Profile Section */}
           <div className="bg-white rounded-lg shadow-sm overflow-hidden mb-6">
             {/* Banner Image */}
@@ -227,42 +220,6 @@ const CandidateProfile = ({ candidateData, onBioUpdate, onPhotoUpload }) => {
             <div className="px-6 py-5">
               <h2 className="font-bold text-gray-800 mb-4">Posts</h2>
               <Post readOnly={false} candidateId={candidateData.id} />
-            </div>
-          </div>
-        </div>
-
-        {/* Documents Column */}
-        <div className="w-[320px]">
-          <div className="bg-white rounded-lg shadow-sm p-5">
-            <h2 className="font-bold text-lg mb-4 text-gray-800">Documents</h2>
-
-            {/* Document Upload Area */}
-            <div className="border-2 border-dashed border-gray-200 rounded-lg p-4 mb-5 text-center">
-              <p className="text-gray-500 text-sm">
-                Drag and drop files here to upload
-              </p>
-            </div>
-
-            {/* Document List */}
-            <div className="space-y-2.5">
-              {/* Example documents - replace with actual data */}
-              {[
-                { name: "PLATFORM PROPOSAL", status: "APPROVED" },
-                { name: "LEAVE OF CONSULTATION", status: "APPROVED" },
-                { name: "INCREASE OF FUNDS", status: "APPROVED" },
-              ].map((doc, index) => (
-                <div
-                  key={index}
-                  className="flex items-center justify-between bg-gray-50 p-2.5 rounded"
-                >
-                  <span className="text-sm font-medium text-gray-700">
-                    {doc.name}
-                  </span>
-                  <span className="text-xs px-2 py-1 bg-green-50 text-green-600 rounded font-medium">
-                    {doc.status}
-                  </span>
-                </div>
-              ))}
             </div>
           </div>
         </div>
