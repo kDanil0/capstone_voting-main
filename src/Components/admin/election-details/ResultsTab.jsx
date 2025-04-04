@@ -48,6 +48,9 @@ const COLORS = [
   "#FF6B6B",
 ];
 
+// Colors for abstention pie chart
+const ABSTENTION_COLORS = ["#52c41a", "#ff4d4f"];
+
 /**
  * Component for displaying election results with charts
  */
@@ -165,7 +168,9 @@ const ResultsTab = ({ electionData }) => {
   // Get data from API responses
   const totalVoters = turnout.election.total_voters || 0;
   const votesCast = turnout.election.votes_cast || 0;
-  const turnoutPercentage = turnout.election.turnout_percentage || 0;
+  const turnoutPercentage = Math.round(
+    turnout.election.turnout_percentage || 0
+  );
   const abstainedCount = totalVoters - votesCast;
   const abstainedPercentage =
     totalVoters > 0 ? Math.round((abstainedCount / totalVoters) * 100) : 0;
@@ -215,7 +220,7 @@ const ResultsTab = ({ electionData }) => {
           </Col>
           <Col xs={24} sm={12} md={8}>
             <Statistic
-              title="Abstained"
+              title="Not yet voted"
               value={abstainedCount}
               prefix={<StopOutlined />}
               valueStyle={{ color: "#ff4d4f" }}
@@ -236,7 +241,7 @@ const ResultsTab = ({ electionData }) => {
               "0%": "#108ee9",
               "100%": "#52c41a",
             }}
-            format={(percent) => `${percent}%`}
+            format={(percent) => `${Math.round(percent)}%`}
           />
         </div>
       </Card>
@@ -268,220 +273,296 @@ const ResultsTab = ({ electionData }) => {
       {positionsToShow.length === 0 ? (
         <Empty description="No positions to display" />
       ) : (
-        positionsToShow.map((position) => (
-          <Card
-            key={position.position_id}
-            title={position.position_name}
-            className="mb-4"
-          >
-            {position.candidates.length === 0 ? (
-              <Empty description="No candidates for this position" />
-            ) : (
-              <>
-                <Row gutter={[24, 24]}>
-                  <Col xs={24} lg={12}>
-                    <div style={{ height: "300px" }}>
-                      <Title level={5}>Vote Distribution (Bar Chart)</Title>
-                      <BarChart
-                        width={600}
-                        height={300}
-                        data={position.candidates}
-                        margin={{
-                          top: 5,
-                          right: 30,
-                          left: 20,
-                          bottom: 5,
-                        }}
-                      >
-                        <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis
-                          dataKey="name"
-                          tickFormatter={(str) => {
-                            return str.length > 15
-                              ? `${str.slice(0, 15)}...`
-                              : str;
-                          }}
-                        />
-                        <YAxis />
-                        <Tooltip
-                          formatter={(value, name) => [
-                            `${value} votes`,
-                            "Votes",
-                          ]}
-                        />
-                        <Legend />
-                        <Bar
-                          dataKey="votes"
-                          fill="#8884d8"
-                          name="Votes"
-                          label={{
-                            position: "top",
-                            formatter: (value) => `${value}`,
-                          }}
-                        />
-                      </BarChart>
-                    </div>
-                  </Col>
-                  <Col xs={24} lg={12}>
-                    <div style={{ height: "300px" }}>
-                      <Title level={5}>Vote Distribution (Pie Chart)</Title>
-                      <PieChart width={400} height={300}>
-                        <Pie
+        positionsToShow.map((position) => {
+          // Calculate abstained votes for this position
+          const abstainedVotes = getAbstainedForPosition(position);
+          const totalVotesForPosition = position.candidates.reduce(
+            (sum, c) => sum + c.votes,
+            0
+          );
+          const abstainPercentage =
+            votesCast > 0 ? Math.round((abstainedVotes / votesCast) * 100) : 0;
+
+          // Data for the abstention pie chart
+          const abstentionData = [
+            { name: "Voted", value: totalVotesForPosition },
+            { name: "Abstained", value: abstainedVotes },
+          ];
+
+          return (
+            <Card
+              key={position.position_id}
+              title={position.position_name}
+              className="mb-4"
+            >
+              {position.candidates.length === 0 ? (
+                <Empty description="No candidates for this position" />
+              ) : (
+                <>
+                  <Row gutter={[24, 24]}>
+                    <Col xs={24} md={8}>
+                      <div style={{ height: "300px" }}>
+                        <Title level={5}>Vote Distribution (Bar Chart)</Title>
+                        <BarChart
+                          width={300}
+                          height={300}
                           data={position.candidates}
-                          cx="50%"
-                          cy="50%"
-                          labelLine={true}
-                          outerRadius={80}
-                          fill="#8884d8"
-                          dataKey="votes"
-                          nameKey="name"
-                          label={({
-                            cx,
-                            cy,
-                            midAngle,
-                            innerRadius,
-                            outerRadius,
-                            value,
-                            percent,
-                          }) => {
-                            const radius =
-                              innerRadius + (outerRadius - innerRadius) * 0.5;
-                            const x =
-                              cx +
-                              radius * Math.cos(-midAngle * (Math.PI / 180));
-                            const y =
-                              cy +
-                              radius * Math.sin(-midAngle * (Math.PI / 180));
-                            return (
-                              <text
-                                x={x}
-                                y={y}
-                                fill="white"
-                                textAnchor="middle"
-                                dominantBaseline="central"
-                              >
-                                {`${(percent * 100).toFixed(0)}%`}
-                              </text>
-                            );
+                          margin={{
+                            top: 5,
+                            right: 30,
+                            left: 20,
+                            bottom: 5,
                           }}
                         >
-                          {position.candidates.map((entry, index) => (
-                            <Cell
-                              key={`cell-${index}`}
-                              fill={COLORS[index % COLORS.length]}
-                            />
-                          ))}
-                        </Pie>
-                        <Tooltip
-                          formatter={(value, name) => [`${value} votes`, name]}
-                        />
-                        <Legend />
-                      </PieChart>
-                    </div>
-                  </Col>
-                </Row>
+                          <CartesianGrid strokeDasharray="3 3" />
+                          <XAxis
+                            dataKey="name"
+                            tickFormatter={(str) => {
+                              return str.length > 15
+                                ? `${str.slice(0, 15)}...`
+                                : str;
+                            }}
+                          />
+                          <YAxis />
+                          <Tooltip
+                            formatter={(value, name) => [
+                              `${value} votes`,
+                              "Votes",
+                            ]}
+                          />
+                          <Legend />
+                          <Bar
+                            dataKey="votes"
+                            fill="#8884d8"
+                            name="Votes"
+                            label={{
+                              position: "top",
+                              formatter: (value) => `${value}`,
+                            }}
+                          />
+                        </BarChart>
+                      </div>
+                    </Col>
+                    <Col xs={24} md={8}>
+                      <div style={{ height: "300px" }}>
+                        <Title level={5}>Vote Distribution (Pie Chart)</Title>
+                        <PieChart width={300} height={300}>
+                          <Pie
+                            data={position.candidates}
+                            cx="50%"
+                            cy="50%"
+                            labelLine={true}
+                            outerRadius={80}
+                            fill="#8884d8"
+                            dataKey="votes"
+                            nameKey="name"
+                            label={({
+                              cx,
+                              cy,
+                              midAngle,
+                              innerRadius,
+                              outerRadius,
+                              value,
+                              percent,
+                            }) => {
+                              const radius =
+                                innerRadius + (outerRadius - innerRadius) * 0.5;
+                              const x =
+                                cx +
+                                radius * Math.cos(-midAngle * (Math.PI / 180));
+                              const y =
+                                cy +
+                                radius * Math.sin(-midAngle * (Math.PI / 180));
+                              return (
+                                <text
+                                  x={x}
+                                  y={y}
+                                  fill="white"
+                                  textAnchor="middle"
+                                  dominantBaseline="central"
+                                >
+                                  {`${Math.round(percent * 100)}%`}
+                                </text>
+                              );
+                            }}
+                          >
+                            {position.candidates.map((entry, index) => (
+                              <Cell
+                                key={`cell-${index}`}
+                                fill={COLORS[index % COLORS.length]}
+                              />
+                            ))}
+                          </Pie>
+                          <Tooltip
+                            formatter={(value, name) => [
+                              `${value} votes`,
+                              name,
+                            ]}
+                          />
+                          <Legend />
+                        </PieChart>
+                      </div>
+                    </Col>
+                    <Col xs={24} md={8}>
+                      <div style={{ height: "300px" }}>
+                        <Title level={5}>Abstained Votes</Title>
+                        <PieChart width={300} height={300}>
+                          <Pie
+                            data={abstentionData}
+                            cx="50%"
+                            cy="50%"
+                            labelLine={false}
+                            outerRadius={80}
+                            fill="#8884d8"
+                            dataKey="value"
+                            nameKey="name"
+                            label={({
+                              cx,
+                              cy,
+                              midAngle,
+                              innerRadius,
+                              outerRadius,
+                              value,
+                              percent,
+                              name,
+                            }) => {
+                              const radius =
+                                innerRadius + (outerRadius - innerRadius) * 0.5;
+                              const x =
+                                cx +
+                                radius * Math.cos(-midAngle * (Math.PI / 180));
+                              const y =
+                                cy +
+                                radius * Math.sin(-midAngle * (Math.PI / 180));
+                              return (
+                                <text
+                                  x={x}
+                                  y={y}
+                                  fill="white"
+                                  textAnchor="middle"
+                                  dominantBaseline="central"
+                                >
+                                  {`${Math.round(percent * 100)}%`}
+                                </text>
+                              );
+                            }}
+                          >
+                            {abstentionData.map((entry, index) => (
+                              <Cell
+                                key={`abstention-cell-${index}`}
+                                fill={
+                                  ABSTENTION_COLORS[
+                                    index % ABSTENTION_COLORS.length
+                                  ]
+                                }
+                              />
+                            ))}
+                          </Pie>
+                          <Tooltip
+                            formatter={(value, name) => [
+                              `${value} voters (${Math.round(
+                                (value / votesCast) * 100
+                              )}%)`,
+                              name,
+                            ]}
+                          />
+                          <Legend />
+                        </PieChart>
+                      </div>
+                    </Col>
+                  </Row>
 
-                {/* Tabular results */}
-                <div className="mt-4">
-                  <Title level={5}>Detailed Results</Title>
-                  <Table
-                    dataSource={position.candidates}
-                    rowKey="candidate_id"
-                    pagination={false}
-                    columns={[
-                      {
-                        title: "Candidate",
-                        dataIndex: "name",
-                        key: "name",
-                      },
-                      {
-                        title: "Party List",
-                        dataIndex: "partylist",
-                        key: "partylist",
-                        render: (partylist) =>
-                          partylist ? (
-                            <Tag color="purple">{partylist}</Tag>
-                          ) : (
-                            <Tag>Independent</Tag>
-                          ),
-                      },
-                      {
-                        title: "Votes",
-                        dataIndex: "votes",
-                        key: "votes",
-                        sorter: (a, b) => a.votes - b.votes,
-                        defaultSortOrder: "descend",
-                      },
-                      {
-                        title: "Percentage",
-                        key: "percentage",
-                        render: (_, record) => {
-                          const totalVotes = position.candidates.reduce(
-                            (sum, c) => sum + c.votes,
-                            0
-                          );
-                          const percentage =
-                            totalVotes > 0
-                              ? Math.round((record.votes / totalVotes) * 100)
-                              : 0;
-                          return `${percentage}%`;
+                  {/* Tabular results */}
+                  <div className="mt-4">
+                    <Title level={5}>Detailed Results</Title>
+                    <Table
+                      dataSource={position.candidates}
+                      rowKey="candidate_id"
+                      pagination={false}
+                      columns={[
+                        {
+                          title: "Candidate",
+                          dataIndex: "name",
+                          key: "name",
                         },
-                      },
-                      {
-                        title: "Status",
-                        key: "status",
-                        render: (_, record) => {
-                          const isWinner = position.winners.some(
-                            (winner) =>
-                              typeof winner === "object" &&
-                              winner.candidate_id === record.candidate_id
-                          );
-                          return isWinner ? (
-                            <Tag color="green">Winner</Tag>
-                          ) : (
-                            <Tag color="default">-</Tag>
-                          );
+                        {
+                          title: "Party List",
+                          dataIndex: "partylist",
+                          key: "partylist",
+                          render: (partylist) =>
+                            partylist ? (
+                              <Tag color="purple">{partylist}</Tag>
+                            ) : (
+                              <Tag>Independent</Tag>
+                            ),
                         },
-                      },
-                    ]}
-                    summary={() => (
-                      <Table.Summary.Row>
-                        <Table.Summary.Cell index={0} colSpan={2}>
-                          <strong>Total</strong>
-                        </Table.Summary.Cell>
-                        <Table.Summary.Cell index={1}>
-                          <strong>
-                            {position.candidates.reduce(
+                        {
+                          title: "Votes",
+                          dataIndex: "votes",
+                          key: "votes",
+                          sorter: (a, b) => a.votes - b.votes,
+                          defaultSortOrder: "descend",
+                        },
+                        {
+                          title: "Percentage",
+                          key: "percentage",
+                          render: (_, record) => {
+                            const totalVotes = position.candidates.reduce(
                               (sum, c) => sum + c.votes,
                               0
-                            )}
-                          </strong>
-                        </Table.Summary.Cell>
-                        <Table.Summary.Cell index={2}>
-                          <strong>100%</strong>
-                        </Table.Summary.Cell>
-                        <Table.Summary.Cell index={3}></Table.Summary.Cell>
-                      </Table.Summary.Row>
-                    )}
-                  />
-                </div>
-
-                {/* Abstained votes */}
-                <div className="mt-4">
-                  <Text type="secondary">
-                    Abstained votes: {getAbstainedForPosition(position)} (
-                    {votesCast > 0
-                      ? Math.round(
-                          (getAbstainedForPosition(position) / votesCast) * 100
-                        )
-                      : 0}
-                    % of total voters)
-                  </Text>
-                </div>
-              </>
-            )}
-          </Card>
-        ))
+                            );
+                            const percentage =
+                              totalVotes > 0
+                                ? Math.round((record.votes / totalVotes) * 100)
+                                : 0;
+                            return `${percentage}%`;
+                          },
+                        },
+                        {
+                          title: "Status",
+                          key: "status",
+                          render: (_, record) => {
+                            const isWinner = position.winners.some(
+                              (winner) =>
+                                typeof winner === "object" &&
+                                winner.candidate_id === record.candidate_id
+                            );
+                            return isWinner ? (
+                              <Tag color="green" style={{ fontWeight: "bold" }}>
+                                WINNER
+                              </Tag>
+                            ) : (
+                              <Tag color="default"></Tag>
+                            );
+                          },
+                        },
+                      ]}
+                      summary={() => (
+                        <Table.Summary.Row>
+                          <Table.Summary.Cell index={0} colSpan={2}>
+                            <strong>Total</strong>
+                          </Table.Summary.Cell>
+                          <Table.Summary.Cell index={1}>
+                            <strong>
+                              {position.candidates.reduce(
+                                (sum, c) => sum + c.votes,
+                                0
+                              )}
+                            </strong>
+                          </Table.Summary.Cell>
+                          <Table.Summary.Cell index={2}>
+                            <strong>100%</strong>
+                          </Table.Summary.Cell>
+                          <Table.Summary.Cell index={3}></Table.Summary.Cell>
+                        </Table.Summary.Row>
+                      )}
+                    />
+                  </div>
+                </>
+              )}
+            </Card>
+          );
+        })
       )}
     </div>
   );
