@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
   getElectionById,
@@ -15,6 +15,7 @@ const VotingProcess = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user, token } = useAuthContext();
+  const contentRef = useRef(null); // Reference to scroll to
 
   const [election, setElection] = useState(null);
   const [positions, setPositions] = useState([]);
@@ -23,8 +24,25 @@ const VotingProcess = () => {
   const [selectedCandidates, setSelectedCandidates] = useState({});
   const [submitting, setSubmitting] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
+  const [errorMessage, setErrorMessage] = useState("");
   const [currentPositionIndex, setCurrentPositionIndex] = useState(0);
   const [showSummary, setShowSummary] = useState(false);
+
+  // Scroll to top when error message changes
+  useEffect(() => {
+    if (errorMessage) {
+      // Scroll to the top of the content
+      if (contentRef.current) {
+        contentRef.current.scrollIntoView({
+          behavior: "smooth",
+          block: "start",
+        });
+      } else {
+        // Fallback if ref is not available
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      }
+    }
+  }, [errorMessage]);
 
   // Function to format profile photo URL consistently
   const formatProfilePhotoUrl = (photoPath) => {
@@ -126,6 +144,8 @@ const VotingProcess = () => {
       ...prev,
       [positionId]: candidateId,
     }));
+    // Clear any error message when a selection is made
+    setErrorMessage("");
   };
 
   // Handle vote submission
@@ -136,7 +156,7 @@ const VotingProcess = () => {
     );
 
     if (missingSelections.length > 0) {
-      alert(
+      setErrorMessage(
         "Please make a selection for all positions. You can select a candidate or choose to abstain."
       );
       return;
@@ -157,16 +177,11 @@ const VotingProcess = () => {
           candidate_id: parseInt(selectedCandidates[position.position_id]),
         }));
 
-      // If no positions have actual votes (all abstained), show warning
+      // If no positions have actual votes (all abstained), show error message
       if (votesArray.length === 0) {
-        if (
-          !confirm(
-            "You've chosen to abstain from all positions. Do you want to continue?"
-          )
-        ) {
-          setSubmitting(false);
-          return;
-        }
+        setErrorMessage("You need to vote for at least one candidate.");
+        setSubmitting(false);
+        return;
       }
 
       const voteData = {
@@ -293,9 +308,16 @@ const VotingProcess = () => {
       </div>
 
       {/* White Content Section with Border */}
-      <div className="flex-grow bg-white py-8">
+      <div className="flex-grow bg-white py-8" ref={contentRef}>
         <div className="container mx-auto px-4">
           <div className="border border-gray-300 rounded-md p-6">
+            {/* Error Message Display */}
+            {errorMessage && (
+              <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
+                <p className="font-medium">{errorMessage}</p>
+              </div>
+            )}
+
             {!showSummary ? (
               <PositionVoting
                 position={currentPosition}
@@ -312,6 +334,7 @@ const VotingProcess = () => {
                   setCurrentPositionIndex(positionIndex);
                   setShowSummary(false);
                 }}
+                editButtonText="Change Vote"
               />
             )}
 
@@ -327,7 +350,14 @@ const VotingProcess = () => {
                 }
               }}
               onNext={() => {
-                if (currentPositionIndex < positions.length - 1) {
+                // Check if we came from vote summary (user was changing a vote)
+                // If so, go directly back to summary after clicking Next
+                if (
+                  !showSummary &&
+                  selectedCandidates[currentPosition.position_id]
+                ) {
+                  setShowSummary(true);
+                } else if (currentPositionIndex < positions.length - 1) {
                   setCurrentPositionIndex(currentPositionIndex + 1);
                 } else {
                   setShowSummary(true);
