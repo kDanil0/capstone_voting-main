@@ -280,8 +280,11 @@ const ResultsTab = ({ electionData }) => {
             (sum, c) => sum + c.votes,
             0
           );
+          const totalWithAbstained = totalVotesForPosition + abstainedVotes;
           const abstainPercentage =
-            votesCast > 0 ? Math.round((abstainedVotes / votesCast) * 100) : 0;
+            totalWithAbstained > 0
+              ? Math.round((abstainedVotes / totalWithAbstained) * 100)
+              : 0;
 
           // Data for the abstention pie chart
           const abstentionData = [
@@ -507,10 +510,11 @@ const ResultsTab = ({ electionData }) => {
                           title: "Percentage",
                           key: "percentage",
                           render: (_, record) => {
-                            const totalVotes = position.candidates.reduce(
-                              (sum, c) => sum + c.votes,
-                              0
-                            );
+                            const totalVotes =
+                              position.candidates.reduce(
+                                (sum, c) => sum + c.votes,
+                                0
+                              ) + abstainedVotes;
                             const percentage =
                               totalVotes > 0
                                 ? Math.round((record.votes / totalVotes) * 100)
@@ -538,23 +542,40 @@ const ResultsTab = ({ electionData }) => {
                         },
                       ]}
                       summary={() => (
-                        <Table.Summary.Row>
-                          <Table.Summary.Cell index={0} colSpan={2}>
-                            <strong>Total</strong>
-                          </Table.Summary.Cell>
-                          <Table.Summary.Cell index={1}>
-                            <strong>
-                              {position.candidates.reduce(
-                                (sum, c) => sum + c.votes,
-                                0
-                              )}
-                            </strong>
-                          </Table.Summary.Cell>
-                          <Table.Summary.Cell index={2}>
-                            <strong>100%</strong>
-                          </Table.Summary.Cell>
-                          <Table.Summary.Cell index={3}></Table.Summary.Cell>
-                        </Table.Summary.Row>
+                        <>
+                          <Table.Summary.Row style={{ background: "#fff7e6" }}>
+                            <Table.Summary.Cell index={0} colSpan={2}>
+                              Abstained{" "}
+                              <Tag color="warning">
+                                Did not vote for this position
+                              </Tag>
+                            </Table.Summary.Cell>
+                            <Table.Summary.Cell index={1}>
+                              {abstainedVotes}
+                            </Table.Summary.Cell>
+                            <Table.Summary.Cell index={2}>
+                              {abstainPercentage}%
+                            </Table.Summary.Cell>
+                            <Table.Summary.Cell index={3}></Table.Summary.Cell>
+                          </Table.Summary.Row>
+                          <Table.Summary.Row>
+                            <Table.Summary.Cell index={0} colSpan={2}>
+                              <strong>Total</strong>
+                            </Table.Summary.Cell>
+                            <Table.Summary.Cell index={1}>
+                              <strong>
+                                {position.candidates.reduce(
+                                  (sum, c) => sum + c.votes,
+                                  0
+                                ) + abstainedVotes}
+                              </strong>
+                            </Table.Summary.Cell>
+                            <Table.Summary.Cell index={2}>
+                              <strong>100%</strong>
+                            </Table.Summary.Cell>
+                            <Table.Summary.Cell index={3}></Table.Summary.Cell>
+                          </Table.Summary.Row>
+                        </>
                       )}
                     />
                   </div>
