@@ -27,6 +27,7 @@ const VotingProcess = () => {
   const [errorMessage, setErrorMessage] = useState("");
   const [currentPositionIndex, setCurrentPositionIndex] = useState(0);
   const [showSummary, setShowSummary] = useState(false);
+  const [isChangingVote, setIsChangingVote] = useState(false); // Track if user is changing a vote
 
   // Scroll to top when error message changes
   useEffect(() => {
@@ -333,6 +334,7 @@ const VotingProcess = () => {
                 onEdit={(positionIndex) => {
                   setCurrentPositionIndex(positionIndex);
                   setShowSummary(false);
+                  setIsChangingVote(true); // Set flag when changing a vote
                 }}
                 editButtonText="Change Vote"
               />
@@ -350,13 +352,14 @@ const VotingProcess = () => {
                 }
               }}
               onNext={() => {
-                // Check if we came from vote summary (user was changing a vote)
-                // If so, go directly back to summary after clicking Next
+                // Only go directly to summary if user is changing a vote and has made a selection
                 if (
+                  isChangingVote &&
                   !showSummary &&
                   selectedCandidates[currentPosition.position_id]
                 ) {
                   setShowSummary(true);
+                  setIsChangingVote(false); // Reset the flag after returning to summary
                 } else if (currentPositionIndex < positions.length - 1) {
                   setCurrentPositionIndex(currentPositionIndex + 1);
                 } else {
