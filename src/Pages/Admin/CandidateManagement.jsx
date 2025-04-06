@@ -1,6 +1,6 @@
 // src/Components/admin/CandidateManagement.jsx
-import React, { useState } from "react";
-import DashboardHeader from "../../components/admin/DashboardHeader";
+import React, { useState, useEffect } from "react";
+import DashboardHeader from "../../Components/admin/DashboardHeader";
 import CandidateTable from "../../Components/admin/CandidateTable";
 import CreateCandidateForm from "../../Components/admin/CandidateForm";
 import { CirclePlus } from "lucide-react";

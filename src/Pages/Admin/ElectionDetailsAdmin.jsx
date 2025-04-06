@@ -6,17 +6,17 @@ import {
   deleteElection,
 } from "../../utils/api";
 import { useAuthContext } from "../../utils/AuthContext";
-import DashboardHeader from "../../components/admin/DashboardHeader";
+import DashboardHeader from "../../Components/admin/DashboardHeader";
 import { Row, Col, Spin, Alert, Button, message, Tabs } from "antd";
 
 // Import modular components
-import ElectionHeader from "../../components/admin/election-details/ElectionHeader";
-import ElectionInformation from "../../components/admin/election-details/ElectionInformation";
-import PositionsTable from "../../components/admin/election-details/PositionsTable";
-import CandidatesTable from "../../components/admin/election-details/CandidatesTable";
-import EditElectionModal from "../../components/admin/election-details/EditElectionModal";
-import DeleteConfirmationModal from "../../components/admin/election-details/DeleteConfirmationModal";
-import ResultsTab from "../../components/admin/election-details/ResultsTab";
+import ElectionHeader from "../../Components/admin/election-details/ElectionHeader";
+import ElectionInformation from "../../Components/admin/election-details/ElectionInformation";
+import PositionsTable from "../../Components/admin/election-details/PositionsTable";
+import CandidatesTable from "../../Components/admin/election-details/CandidatesTable";
+import EditElectionModal from "../../Components/admin/election-details/EditElectionModal";
+import DeleteConfirmationModal from "../../Components/admin/election-details/DeleteConfirmationModal";
+import ResultsTab from "../../Components/admin/election-details/ResultsTab";
 
 /**
  * Admin component for viewing and editing election details

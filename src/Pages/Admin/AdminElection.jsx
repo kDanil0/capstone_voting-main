@@ -1,7 +1,7 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
-import DashboardHeader from "../../components/admin/DashboardHeader";
-import DashboardCard from "../../components/admin/DashboardCard";
+import DashboardHeader from "../../Components/admin/DashboardHeader";
+import DashboardCard from "../../Components/admin/DashboardCard";
 import {
   FormatListBulleted,
   AddCircleOutlineOutlined,

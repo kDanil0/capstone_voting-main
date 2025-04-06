@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import DashboardHeader from "../../components/admin/DashboardHeader";
+import DashboardHeader from "../../Components/admin/DashboardHeader";
 import StudentTable from "../../Components/admin/StudentTable";
 import StudentForm from "../../Components/admin/StudentForm";
 import { CirclePlus } from "lucide-react";

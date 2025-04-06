@@ -30,7 +30,7 @@ import {
   updatePartylist,
   deletePartylist,
 } from "../../utils/api";
-import DashboardHeader from "../../components/admin/DashboardHeader";
+import DashboardHeader from "../../Components/admin/DashboardHeader";
 
 const { Title, Text } = Typography;
 const { confirm } = Modal;

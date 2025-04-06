@@ -1,7 +1,7 @@
 // src/Pages/Elections/AllElectionsView.jsx
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import DashboardHeader from "../../components/admin/DashboardHeader";
+import DashboardHeader from "../../Components/admin/DashboardHeader";
 import ElectionCard from "../../Components/admin/ElectionCard";
 import { getAllElections } from "../../utils/api";
 import { useAuthContext } from "../../utils/AuthContext";

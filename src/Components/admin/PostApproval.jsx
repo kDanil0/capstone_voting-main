@@ -31,7 +31,7 @@ import {
   getStorageUrl,
   getAllPostsAdmin,
 } from "../../utils/api";
-import DashboardHeader from "../../components/admin/DashboardHeader";
+import DashboardHeader from "../../Components/admin/DashboardHeader";
 
 const { Title, Text, Paragraph } = Typography;
 const { Option } = Select;
